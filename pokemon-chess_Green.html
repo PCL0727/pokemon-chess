@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寶可夢西洋棋</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pine:#102A22;
+    --pine-deep:#0A1D17;
+    --parchment:#F5E6C8;
+    --grass:#2F6F4E;
+    --grass-dark:#255A3F;
+    --red:#E3350D;
+    --gold:#FFCB05;
+    --cream:#FAF3E0;
+    --ink:#1B2B24;
+    --sq:64px;
+    --coord-w:22px;
+  }
+  *{box-sizing:border-box;}
+  html, body{ height:100%; }
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,203,5,0.08), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(227,53,13,0.10), transparent 45%),
+      var(--pine-deep);
+    color:var(--cream);
+    font-family:'Nunito', sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 60px;
+  }
+  h1{
+    font-family:'Press Start 2P', monospace;
+    font-size:clamp(14px,3vw,22px);
+    color:var(--gold);
+    text-shadow:3px 3px 0 var(--red), 0 0 22px rgba(255,203,5,0.25);
+    letter-spacing:1px;
+    margin:6px 0 4px;
+    text-align:center;
+    line-height:1.6;
+  }
+  .subtitle{
+    color:rgba(250,243,224,0.65);
+    font-size:14px;
+    margin-bottom:22px;
+    text-align:center;
+  }
+  .mode-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:18px;
+    background:rgba(0,0,0,0.25);
+    padding:5px;
+    border-radius:999px;
+    border:2px solid rgba(255,203,5,0.4);
+  }
+  .mode-tab{
+    background:transparent;
+    box-shadow:none;
+    color:rgba(250,243,224,0.6);
+    font-size:13px;
+    padding:8px 16px;
+  }
+  .mode-tab.active{ background:var(--gold); color:var(--ink); box-shadow:none; }
+  .mode-tab:active{ transform:none; }
+  .ghost-btn{
+    background:rgba(0,0,0,0.3);
+    box-shadow:none;
+    border:1.5px solid var(--gold);
+    color:var(--cream);
+    font-size:12px;
+    padding:8px 14px;
+  }
+  .ghost-btn:active{ transform:translateY(1px); box-shadow:none; }
+
+  /* ---------- Rules modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.65);
+    display:flex; align-items:center; justify-content:center;
+    z-index:1000;
+    padding:20px;
+  }
+  .modal-box{
+    position:relative;
+    background:linear-gradient(180deg, var(--pine) 0%, #0d241c 100%);
+    border:3px solid var(--gold);
+    border-radius:16px;
+    padding:24px 22px;
+    max-width:640px;
+    width:100%;
+    max-height:85vh;
+    overflow-y:auto;
+    box-shadow:0 20px 50px rgba(0,0,0,0.6);
+  }
+  .modal-box h2{
+    font-family:'Press Start 2P', monospace;
+    font-size:15px;
+    color:var(--gold);
+    margin:0 0 16px;
+    line-height:1.6;
+  }
+  .modal-box h3{
+    font-size:14px;
+    color:var(--gold);
+    margin:18px 0 6px;
+  }
+  .modal-box h3:first-of-type{ margin-top:0; }
+  .modal-box p{
+    font-size:13px;
+    line-height:1.8;
+    color:rgba(250,243,224,0.9);
+    margin:4px 0;
+  }
+  .rules-note{
+    background:rgba(227,53,13,0.15);
+    border:1px dashed var(--red);
+    border-radius:10px;
+    padding:8px 12px;
+    margin-top:8px !important;
+  }
+  .modal-close{
+    position:absolute;
+    top:14px; right:14px;
+    background:rgba(0,0,0,0.35);
+    box-shadow:none;
+    border-radius:50%;
+    width:32px; height:32px;
+    padding:0;
+    font-size:14px;
+    line-height:1;
+  }
+  .modal-close:active{ transform:none; box-shadow:none; }
+  .rules-piece-list{ display:flex; flex-direction:column; gap:10px; }
+  .rp{
+    font-size:13px;
+    line-height:1.7;
+    color:rgba(250,243,224,0.9);
+    background:rgba(0,0,0,0.2);
+    border-radius:10px;
+    padding:8px 12px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .rp-diagram, .rp-diagram-pawn{ flex-shrink:0; line-height:0; }
+  .rp-diagram svg, .rp-diagram-pawn svg{ display:block; border-radius:6px; overflow:hidden; }
+  .rp-text{ flex:1; }
+  .rp-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-top:10px;
+    font-size:12px;
+    color:rgba(250,243,224,0.75);
+  }
+  .rp-legend span{ display:flex; align-items:center; gap:6px; }
+  .dot-sample{
+    display:inline-block; width:14px; height:14px; border-radius:50%;
+    background:rgba(255,203,5,0.85); border:1.5px solid #1B2B24;
+  }
+  .dot-sample.cap{ background:rgba(227,53,13,0.85); }
+  .rule-diagram-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:rgba(0,0,0,0.2);
+    border-radius:10px;
+    padding:10px 12px;
+    margin:8px 0;
+  }
+  .rule-diagram-row p{ margin:0; flex:1; }
+  .rule-diagram-panel{ flex-shrink:0; line-height:0; }
+  .diagram-figure{ display:inline-flex; flex-direction:column; align-items:center; gap:4px; }
+  .diagram-figure span{ font-size:10px; color:rgba(250,243,224,0.7); }
+  .diagram-pair{ display:flex; align-items:center; gap:6px; }
+  .diagram-arrow{ font-size:16px; color:var(--gold); }
+  @media (max-width:480px){
+    .rp{ flex-direction:column; align-items:flex-start; }
+    .rule-diagram-row{ flex-direction:column; align-items:stretch; }
+  }
+  .rp-badge{
+    flex-shrink:0;
+    width:26px; height:26px; min-width:26px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+    margin-top:1px;
+  }
+  @media (max-width:480px){
+    .modal-box{ padding:20px 16px; }
+    .modal-box h2{ font-size:12px; }
+  }
+  .promo-box{ max-width:380px; text-align:center; }
+  .promo-options{ display:flex; justify-content:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  .promo-opt{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    background:rgba(0,0,0,0.25);
+    border:2px solid rgba(255,203,5,0.3);
+    border-radius:12px;
+    padding:10px 8px;
+    cursor:pointer;
+    box-shadow:none;
+    width:76px;
+  }
+  .promo-opt:hover{ border-color:var(--gold); filter:none; }
+  .promo-opt:active{ transform:none; box-shadow:none; }
+  .promo-opt img{ width:44px; height:44px; }
+  .promo-opt span{ font-size:11px; color:var(--cream); line-height:1.3; }
+
+  /* ---------- Check alert popup ---------- */
+  .check-alert-overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.4);
+    display:flex; align-items:center; justify-content:center;
+    z-index:1100;
+    cursor:pointer;
+  }
+  .check-alert-box{
+    background:linear-gradient(180deg, var(--red) 0%, #a4260a 100%);
+    border:4px solid var(--gold);
+    border-radius:20px;
+    padding:20px 32px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.6);
+    animation: check-pop-in 0.35s cubic-bezier(.34,1.56,.64,1);
+    max-width:90vw;
+  }
+  .check-alert-box.fade-out{ animation: check-fade-out 0.4s ease forwards; }
+  @keyframes check-pop-in{
+    0%{ transform:scale(0.6); opacity:0; }
+    70%{ transform:scale(1.08); opacity:1; }
+    100%{ transform:scale(1); opacity:1; }
+  }
+  @keyframes check-fade-out{
+    0%{ transform:scale(1); opacity:1; }
+    100%{ transform:scale(0.85); opacity:0; }
+  }
+  #check-alert-img{ width:56px; height:56px; flex-shrink:0; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+  .check-alert-text{
+    font-family:'Press Start 2P', monospace;
+    font-size:13px;
+    color:var(--cream);
+    line-height:1.6;
+  }
+  @media (max-width:480px){
+    .check-alert-box{ padding:16px 20px; gap:10px; }
+    #check-alert-img{ width:44px; height:44px; }
+    .check-alert-text{ font-size:11px; }
+  }
+  .stadium{
+    background:linear-gradient(180deg, var(--pine) 0%, #0d241c 100%);
+    border:3px solid var(--gold);
+    border-radius:18px;
+    padding:20px;
+    box-shadow:0 18px 40px rgba(0,0,0,0.45), inset 0 0 0 6px var(--pine-deep);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    max-width:960px;
+    width:100%;
+  }
+  .top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    width:100%;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .roster{
+    flex:1;
+    min-width:150px;
+    background:rgba(0,0,0,0.22);
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  .roster h3{
+    font-size:12px;
+    text-transform:none;
+    margin:0 0 8px;
+    color:var(--gold);
+    font-weight:800;
+    border-bottom:1px solid rgba(255,203,5,0.3);
+    padding-bottom:6px;
+  }
+  .roster .row{display:flex; flex-wrap:wrap; gap:4px; min-height:34px;}
+  .roster img{width:26px; height:26px; opacity:0.9;}
+  .cap-chip{ position:relative; display:inline-block; width:26px; height:26px; }
+  .cap-chip img{ width:100%; height:100%; }
+  .cap-badge{
+    position:absolute; right:-3px; bottom:-3px;
+    width:14px; height:14px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; line-height:1;
+    box-shadow:0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .status-bar{
+    text-align:center;
+    font-weight:800;
+    font-size:16px;
+    padding:8px 18px;
+    border-radius:999px;
+    background:rgba(0,0,0,0.28);
+    border:2px solid var(--gold);
+    min-width:260px;
+  }
+  .status-bar.check{ border-color:var(--red); color:#ffd7cd; animation:pulse 1s infinite; }
+  @keyframes pulse{ 0%,100%{box-shadow:0 0 0 0 rgba(227,53,13,0.5);} 50%{box-shadow:0 0 0 8px rgba(227,53,13,0);} }
+
+  .board-wrap{
+    display:grid;
+    grid-template-columns:var(--coord-w) repeat(8, var(--sq)) var(--coord-w);
+    grid-template-rows:var(--coord-w) repeat(8, var(--sq)) var(--coord-w);
+    max-width:100%;
+  }
+  .coord{
+    display:flex; align-items:center; justify-content:center;
+    font-size:clamp(9px, calc(var(--sq) * 0.18), 12px);
+    color:rgba(250,243,224,0.55); font-weight:700;
+  }
+  #board, #puzzle-board{
+    grid-column:2 / span 8;
+    grid-row:2 / span 8;
+    display:grid;
+    grid-template-columns:repeat(8, var(--sq));
+    grid-template-rows:repeat(8, var(--sq));
+    border:4px solid var(--gold);
+    border-radius:6px;
+    overflow:hidden;
+    box-shadow:0 10px 26px rgba(0,0,0,0.5);
+  }
+  .square{
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    user-select:none;
+  }
+  .square.light{ background:var(--parchment); }
+  .square.dark{ background:var(--grass); }
+  .square.selected{ box-shadow:inset 0 0 0 3px var(--red); }
+  .square.last-move{ background-image:linear-gradient(0deg, rgba(255,203,5,0.35), rgba(255,203,5,0.35)); }
+  .square .dot{
+    position:absolute; width:24%; height:24%; border-radius:50%;
+    background:rgba(30,20,10,0.35);
+  }
+  .square .ring{
+    position:absolute; inset:6%; border-radius:50%;
+    box-shadow:inset 0 0 0 4px rgba(227,53,13,0.55);
+  }
+  .square img.piece{
+    width:82%; height:82%;
+    object-fit:contain;
+    filter:drop-shadow(1px 2px 1px rgba(0,0,0,0.45));
+    transition:transform .12s ease;
+    pointer-events:none;
+  }
+  .square.selected img.piece{ transform:scale(1.08); }
+  .square.king-check{ box-shadow:inset 0 0 0 3px var(--red), inset 0 0 18px rgba(227,53,13,0.7); }
+  .piece-badge{
+    position:absolute;
+    right:6%;
+    bottom:4%;
+    width:calc(var(--sq) * 0.4);
+    height:calc(var(--sq) * 0.4);
+    min-width:14px; min-height:14px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:calc(var(--sq) * 0.28);
+    line-height:1;
+    pointer-events:none;
+    box-shadow:0 1px 3px rgba(0,0,0,0.5);
+  }
+  .badge-w{ background:#FAF3E0; color:#1B2B24; border:1.5px solid #1B2B24; }
+  .badge-b{ background:#1B2B24; color:#FAF3E0; border:1.5px solid #FAF3E0; }
+
+  .controls{ display:flex; gap:10px; align-items:center; }
+  button{
+    font-family:'Nunito', sans-serif;
+    font-weight:800;
+    font-size:13px;
+    background:var(--red);
+    color:var(--cream);
+    border:none;
+    border-radius:999px;
+    padding:10px 18px;
+    cursor:pointer;
+    box-shadow:0 4px 0 #9e2308;
+    transition:transform .08s ease;
+  }
+  button:active{ transform:translateY(3px); box-shadow:0 1px 0 #9e2308; }
+  button:hover{ filter:brightness(1.06); }
+
+  .legend{
+    margin-top:8px;
+    width:100%;
+    max-width:960px;
+    background:rgba(0,0,0,0.18);
+    border-radius:14px;
+    padding:14px 18px;
+  }
+  .legend h3{ font-size:12px; color:var(--gold); margin:0 0 10px; }
+  .legend-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px,1fr));
+    gap:8px 20px;
+    font-size:13px;
+  }
+  .legend-grid .pair{ display:flex; align-items:center; gap:8px; }
+  .legend-grid img{ width:24px; height:24px; }
+  .legend-grid .vs{ opacity:.5; font-size:11px; }
+  .evo-note{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px dashed rgba(255,203,5,0.3);
+    font-size:13px;
+    color:rgba(250,243,224,0.85);
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:4px;
+  }
+  .evo-img{ width:22px; height:22px; vertical-align:middle; }
+
+  /* ---------- Puzzle mode ---------- */
+  #puzzle-mode, #battle-mode{ width:100%; max-width:960px; display:flex; flex-direction:column; align-items:center; }
+  .puzzle-intro{
+    background:rgba(0,0,0,0.22);
+    border:1px solid rgba(255,203,5,0.3);
+    border-radius:14px;
+    padding:12px 16px;
+    font-size:13px;
+    line-height:1.7;
+    color:rgba(250,243,224,0.85);
+    margin-bottom:16px;
+    width:100%;
+    text-align:center;
+  }
+  .puzzle-section{ width:100%; margin-bottom:18px; }
+  .puzzle-section h3{
+    font-size:13px;
+    color:var(--gold);
+    margin:0 0 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .diff-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .diff-easy{ background:#5FCB7C; }
+  .diff-medium{ background:#FFCB05; }
+  .diff-hard{ background:#E3350D; }
+  .puzzle-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(64px,1fr));
+    gap:8px;
+  }
+  .puzzle-tile{
+    position:relative;
+    aspect-ratio:1;
+    border-radius:10px;
+    background:rgba(0,0,0,0.25);
+    border:2px solid rgba(255,203,5,0.25);
+    color:var(--cream);
+    font-weight:800;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:none;
+    padding:0;
+  }
+  .puzzle-tile:hover{ border-color:var(--gold); filter:none; }
+  .puzzle-tile:active{ transform:none; box-shadow:none; }
+  .puzzle-tile.solved{ background:rgba(95,203,124,0.25); border-color:#5FCB7C; }
+  .puzzle-tile.solved::after{
+    content:'✅'; position:absolute; top:-6px; right:-6px; font-size:13px;
+  }
+  .puzzle-title{
+    font-weight:800;
+    font-size:15px;
+    text-align:center;
+    color:var(--gold);
+  }
+  .puzzle-hint-box{
+    background:rgba(255,203,5,0.12);
+    border:1px dashed var(--gold);
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:13px;
+    text-align:center;
+    max-width:520px;
+  }
+  .puzzle-msg{ font-size:13px; text-align:center; color:rgba(250,243,224,0.75); }
+
+  /* ---------- Responsive tweaks for tablet / phone ---------- */
+  @media (max-width: 640px){
+    body{ padding:16px 8px 40px; }
+    .stadium{ padding:12px; gap:10px; border-radius:14px; }
+    .top-row{ flex-direction:column; align-items:stretch; gap:8px; }
+    .status-bar{ order:-1; min-width:0; font-size:14px; }
+    .roster{ min-width:0; }
+    .roster .row{ min-height:28px; }
+    .roster img{ width:22px; height:22px; }
+    .cap-chip{ width:22px; height:22px; }
+    .legend{ padding:10px 12px; }
+    .legend-grid{ grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); font-size:12px; }
+    .subtitle{ font-size:12px; margin-bottom:14px; padding:0 6px; }
+    .puzzle-grid{ grid-template-columns:repeat(auto-fill, minmax(48px,1fr)); }
+    .mode-tab{ font-size:12px; padding:7px 12px; }
+  }
+  @media (max-width: 380px){
+    .legend-grid{ grid-template-columns:1fr; }
+    .evo-note{ font-size:12px; }
+  }
+  @media (orientation: landscape) and (max-height: 480px){
+    body{ padding:10px 8px 24px; }
+    h1{ margin:2px 0; }
+    .subtitle{ margin-bottom:8px; }
+    .legend{ display:none; } /* hide reference table in short landscape view to keep board visible without scrolling */
+  }
+</style>
+</head>
+<body>
+
+<h1>寶可夢西洋棋</h1>
+<div class="subtitle">阿爾宙斯陣營 🆚 超夢陣營</div>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" id="tab-battle">⚔️ 雙人對戰</button>
+  <button class="mode-tab" id="tab-puzzle">🧩 單人解謎</button>
+  <button class="mode-tab" id="tab-rules">📖 規則說明</button>
+</div>
+
+<div class="modal-overlay" id="rules-modal" style="display:none;">
+  <div class="modal-box">
+    <button class="modal-close" id="rules-close">✕</button>
+    <h2>📖 寶可夢西洋棋・規則說明</h2>
+
+    <h3>🎯 遊戲目標</h3>
+    <p>把對方的「王」將死——也就是讓對方的王被攻擊（將軍），而且不管怎麼走都無法逃脫、無法擋住、也無法吃掉攻擊的棋子。誰先做到，誰就獲勝！</p>
+
+    <h3>🀄 棋盤與座標</h3>
+    <p>棋盤是 8×8 的格子，直的一排叫「檔」，用字母 a～h 表示；橫的一排叫「列」，用數字 1～8 表示。每個格子都有自己的座標，例如 e4、h8。</p>
+
+    <h3>🐾 每種棋子怎麼走</h3>
+    <div class="rules-piece-list">
+      <div class="rp">
+        <div class="rp-diagram" data-piece="K" data-color="w"></div>
+        <div class="rp-text"><span class="rp-badge badge-w">♔</span><b>王（阿爾宙斯 / 超夢）</b>：每次只能往任何方向走 1 格（上下左右、斜的都可以）。王絕對不能走到會被吃掉的格子！</div>
+      </div>
+      <div class="rp">
+        <div class="rp-diagram" data-piece="Q" data-color="w"></div>
+        <div class="rp-text"><span class="rp-badge badge-w">♕</span><b>后（沙奈朵 / 雪妖女）</b>：最強的棋子！可以往任何方向（直線、橫線、斜線）走任意格數，只要路上沒有被擋住。</div>
+      </div>
+      <div class="rp">
+        <div class="rp-diagram" data-piece="R" data-color="w"></div>
+        <div class="rp-text"><span class="rp-badge badge-w">♖</span><b>城堡（鐵甲暴龍 / 大鋼蛇）</b>：只能沿著直線或橫線走，可以走很多格，但不能斜著走。</div>
+      </div>
+      <div class="rp">
+        <div class="rp-diagram" data-piece="B" data-color="w"></div>
+        <div class="rp-text"><span class="rp-badge badge-w">♗</span><b>主教（胡地 / 耿鬼）</b>：只能斜著走，可以走很多格，但永遠只能走在同一種顏色的格子上。</div>
+      </div>
+      <div class="rp">
+        <div class="rp-diagram" data-piece="N" data-color="w"></div>
+        <div class="rp-text"><span class="rp-badge badge-w">♘</span><b>騎士（烈焰馬 / 黑魯加）</b>：走「L 型」——先走 2 格再轉彎走 1 格（或先 1 格再轉彎 2 格）。騎士是唯一可以「跳過」其他棋子的角色！</div>
+      </div>
+      <div class="rp">
+        <div class="rp-diagram-pawn" data-color="w"></div>
+        <div class="rp-text"><span class="rp-badge badge-w">♙</span><b>兵（皮卡丘 / 喵喵）</b>：只能往前走，第一次可以選擇走 1 格或 2 格，之後每次只能走 1 格。<br>攻擊的時候比較特別：只能往斜前方 1 格吃掉敵方棋子，不能往正前方吃子。</div>
+      </div>
+    </div>
+    <div class="rp-legend">
+      <span><i class="dot-sample"></i> 可以走到（或吃子）的格子</span>
+      <span><i class="dot-sample cap"></i> 士兵專用：只能吃子，不能單純走過去</span>
+    </div>
+
+    <h3>⚔️ 將軍、將死與逼和</h3>
+    <p><b>將軍</b>：當王被敵方棋子攻擊時，就是「被將軍」了，這時候一定要想辦法解除威脅（移動王、擋住攻擊路線，或吃掉攻擊的棋子）。</p>
+    <p><b>將死</b>：如果被將軍時，怎麼樣都無法解除威脅，遊戲就結束了，被將死的一方輸掉比賽。</p>
+    <p><b>逼和（和局）</b>：如果輪到某一方走棋，但這一方的王沒有被將軍，卻找不到任何合法的走法，遊戲就變成平手，稱為「逼和」。</p>
+
+    <h3>⚡ 士兵的進化</h3>
+    <p>士兵（皮卡丘 / 喵喵）如果成功走到棋盤最遠的那一排（對方的底線），就會立刻「進化」！皮卡丘會進化成雷丘、喵喵會進化成貓老大，而且走法會直接變成「后」的走法，變得超強！</p>
+
+    <h3>⭐ 三大特殊規則（西洋棋小知識）</h3>
+    <div class="rule-diagram-row">
+      <div class="rule-diagram-panel" data-diagram="castle"></div>
+      <p><b>王車易位（Castling）</b>：國王向城堡方向移動兩格，城堡再跨到國王另一側，能同時保護國王與出動城堡。（條件：國王和那支城堡都還沒移動過、中間沒有其他棋子、國王沒有被將軍、移動路徑也不能被攻擊。）</p>
+    </div>
+    <div class="rule-diagram-row">
+      <div class="rule-diagram-panel" data-diagram="promotion"></div>
+      <p><b>兵升變（Promotion）</b>：兵走到對方底線時，可以升級為后、城堡、主教或騎士，通常大家都會選最強的后。</p>
+    </div>
+    <div class="rule-diagram-row">
+      <div class="rule-diagram-panel" data-diagram="enpassant"></div>
+      <p><b>吃過路兵（En passant）</b>：如果對方的兵從起始位置一次走兩格，剛好停在你的兵旁邊，你可以「假裝」它只走了一格，斜著把它吃掉——但只能在對方走完那一步的下一次機會立刻執行，錯過就不能再用囉。</p>
+    </div>
+    <p class="rules-note">🎉 更新：這三招現在雙人對戰模式都真的可以用了！士兵走到底線時會跳出選擇視窗，讓你自己選要變成后、城堡、主教還是騎士。（單人解謎模式的 50 道殘局題目維持原本簡單設定，不會用到王車易位或吃過路兵。）</p>
+
+    <h3>🏆 小提醒</h3>
+    <p>每個棋子右下角都有一個小徽章（例如 ♔ ♕ ♖），標示這隻寶可夢代表的是哪種西洋棋棋子，滑鼠移到棋子上也會顯示完整名稱，邊玩邊記會更容易上手！</p>
+  </div>
+</div>
+
+<div class="check-alert-overlay" id="check-alert-overlay" style="display:none;">
+  <div class="check-alert-box" id="check-alert-box">
+    <img id="check-alert-img" src="" alt="">
+    <div class="check-alert-text" id="check-alert-text"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="promo-modal" style="display:none;">
+  <div class="modal-box promo-box">
+    <h3 style="margin-top:0;">兵升變！要變成哪一隻？</h3>
+    <div class="promo-options" id="promo-options"></div>
+  </div>
+</div>
+
+<div id="battle-mode">
+<div class="stadium">
+  <div class="top-row">
+    <div class="roster">
+      <h3>被吃掉的暗色陣營</h3>
+      <div class="row" id="captured-black"></div>
+    </div>
+    <div class="status-bar" id="status">白方（阿爾宙斯陣營）先手</div>
+    <div class="roster">
+      <h3>被吃掉的淺色陣營</h3>
+      <div class="row" id="captured-white"></div>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div></div>
+    <div class="coord">a</div><div class="coord">b</div><div class="coord">c</div><div class="coord">d</div>
+    <div class="coord">e</div><div class="coord">f</div><div class="coord">g</div><div class="coord">h</div>
+    <div></div>
+    <div class="coord">8</div>
+    <div id="board"></div>
+  </div>
+
+  <div class="controls">
+    <button id="restart">🔄 重新開始</button>
+  </div>
+</div>
+
+<div class="legend">
+  <h3>棋子對照表</h3>
+  <div class="legend-grid" id="legend-grid"></div>
+  <div class="evo-note">
+    ⚡ 士兵抵達對方底線時會「進化」，走法變成后，外觀也會變成進化型：
+    <img src="" id="evo-w" class="evo-img"> 皮卡丘 → 雷丘　　
+    <img src="" id="evo-b" class="evo-img"> 喵喵 → 貓老大
+  </div>
+</div>
+</div><!-- /battle-mode -->
+
+<div id="puzzle-mode" style="display:none;">
+
+  <div id="puzzle-list-view">
+    <div class="puzzle-intro">
+      🧩 50 道經典殘局解謎，由簡單到困難，一個人也能練習將死技巧！<br>
+      完成的題目會打勾 ✅，卡住了可以點「提示」或「看答案」。
+    </div>
+    <div id="puzzle-sections"></div>
+  </div>
+
+  <div id="puzzle-play-view" style="display:none;">
+    <div class="stadium">
+      <div class="top-row">
+        <button id="puzzle-back" class="ghost-btn">← 返回題目列表</button>
+        <div class="status-bar" id="puzzle-status">—</div>
+        <div style="min-width:150px;"></div>
+      </div>
+      <div class="puzzle-title" id="puzzle-title">—</div>
+
+      <div class="board-wrap">
+        <div></div>
+        <div class="coord">a</div><div class="coord">b</div><div class="coord">c</div><div class="coord">d</div>
+        <div class="coord">e</div><div class="coord">f</div><div class="coord">g</div><div class="coord">h</div>
+        <div></div>
+        <div class="coord">8</div>
+        <div id="puzzle-board"></div>
+      </div>
+
+      <div class="controls">
+        <button id="puzzle-hint">💡 提示</button>
+        <button id="puzzle-answer">👀 看答案</button>
+        <button id="puzzle-retry">🔄 重新開始這題</button>
+      </div>
+      <div class="puzzle-hint-box" id="puzzle-hint-box" style="display:none;"></div>
+    </div>
+  </div>
+
+</div><!-- /puzzle-mode -->
+
+<script>
+/* ---------- Offline sprite data (base64, no network needed) ---------- */
+const B64_bB = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAJ1BMVEUAAAAQEBBKKUpaSpxqYnt7YqSUc7S0i729rL3e1d7/Wlr/lJT/9v8XUOCgAAAAAXRSTlMAQObYZgAAAqlJREFUWMPtlr2Om0AQx8G8gLElLKWycYSj6IqDjXHk7vrrkK5nVwy9T9qtU0bKI6RJrru8QagcuUixD5UZcDhOMrtQRvG/QDKeH/O1M+A4V1111f8kb6z9bjrSXg4Fkvq6U8VAwON0ZUpmA4GUAE8piE1WrH720ls6HnAn8XZKFiZgAuwWgYN3cFLgHt8pJYUZKB/Z7USt5RqAp1xhROYUIlDqMVEcUkAJJSUwI4AulDqUAhqVJRRDAGglITMDGJPsAgAsNlcfXZQSvZRn+8IGoAugYmK2tUQDLE0AFbP1kLEZ3nS5KaYFAW0KlLMb9ACug/9GXaBgLHHchYTwYlCb2cFxVpiykh3AX1DdLhZ3o1TouNDap5gzo0Jvovxy/GgaBm0LQioSwzor1QcAnuYgak6F5M+1B2w3xjjt60EpIl4DSr5HoCAP+KPPARUe9rULlVcIpOQBdRlwQioL7L/T2VZ+9TOFKGMPVKxpb5szBKoZ2iTfEOCYBNL9UzrJWAKieoNBiap6ghUCW+NIrFksxI+KYto/p/wTlYmZDuyExRz2T00f+LtjDcSmEQpj6tfZXgcEJHPjzK3gY0OEb3UDMLY0AS6IU0j6ctJHmochgD5pfa9/fz3SPNgA7MWHBtD3wSAA48aH689a39XzMACAG3z+Sf+KoMnZAuAR5DcIkH2Tc2IGXGoBVilqdgABiXUzwctIE8DCpSUJaLcSac3M6899eO3ADmxfOyCZVz7bdu0TZnGAM8FoLut4CJ2bzzcByd9Iale5xZ48hGcgpf2U217sFJLfABgZ7mUbMKFs/Tna0/YYBCCRuL7v02Yr7QCdjfPbPKpfpFYPQoCYvixPK+BGUe53DmJu/fDx/Wl3P8fOCCGQilGffKuA++M+Kt2R9lddddU/pz9lOUF//A0VQQAAAABJRU5ErkJggg==";
+const B64_bK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAALVBMVEUAAAAAAAA5OUpKSlpaMRBqantzUgCUlKSkIDmsewDFzdXNnAD/QVL/1QD/7sUDWQ6tAAAAAXRSTlMAQObYZgAABd1JREFUWMPtl81rG0cUwCUR+5KLNqURjgjYk9ibKPgQL42D6MEYU3xIoU4QAp0cl4wbiRVEQR4Q9FC30CX44otBLC50jbxh6GV92CKGHBpyMGUvDmGLEKNjIBTlb+ibXa0l27NuQi89ZGBhNfN+8z7nzSqR+DT+60AfIjM5+kP8QudiqZOrKBiTscKTqdO7hUSMlmiz8dVEAg93idWSiuarq+EzqkOi4nh6/K2A3NMq5PJiWn/7qFCodlfPtyk13KaKG5RWOcbnAsNJ3FundL/PdY5XR31AMQD2e+UBwHdWhwpOqUhFc5f7Pi/TfZ37HMbOiIKTKqK55Pv3XPcx7L4mAI5jgOFcFmzp9Tn3ZwOAp0eAybPyaDLZ5C4AB38EQJOlj4VHVKSCYhnMZ12H/3209QMAHZM5I/lJHasQL8deJ/XuVfaZooC8y5x0MG/8hM4cjwv3vIGZV7uOo92+2QHASQcb3fC8zdO1B/LeZgRMKNoE73DTTYealz1YPAWAvLEZmnq1q2wrux3ETWcQj+UtCbFkGFGxcgf2V2Y7LMrzdcNYWpTXkgBwxZlSLiHO3IMTeT5JDJOJ+Zp4ucXwt2x1WKmpM5lOpBbFyjj3rUCGNCrcT43uPapCvC+JME1WeZkIGbWxLwoqkDeWZB1gyfMOEZrp9cu2YRg/E4o57wYApEFCXIDIQZymXvR9esMwVLoPqWaXBsDhgkRDENep9i4vawjN7Vf7UEoBgCANrxIxTQNl27uvNU2b0XtNxhzhwCLkwfMWJPIXlsHrqSxj1zSNc5MxFtjzSqwtLUha6rLwugk5Awu6sL0ycGAhqH+p24foJl+nonIWp5SbJgcXrm8J+1OyTnnPO9xEuz6lXwJpEzL7gh+FlbdwpqmHGmB1pu83KPg8R6kFJ/RInMTlrVdxzR4hHYA9ADRqiTM9qO9zbofHPV4WwJw124NApROJGPujeqrscv+5pt19Oct7omUMIi4HgqsEEn0dovo11EWTOZHuc664Ctvl9zyQb5pMSX/AHXoJXdM87+UMYwdKczuaLRTi5C++JnuQtsN5C6k1xgZ3yhitx0VKH0Q1D4mD8xNdWyVK5JEaH0RVy1NxHrh5rMKuyYFf+v53Angmbgg4QAO3x0r0iRyAqH4FPnh/gvx7OEDpoU3ykFXa/A00QU8k7h307sjXQr0oB1Im428AEImAE5HJfxOZVF+JqQ+kieNg3BGJyJAvWkF0inVKYoCcKG4Y89CZCCk9KFmFxFihYRf+DcgTQiile/lWrqDCS6soD9NYg/4o5O/ScOxpFFELPgxIPQagv3nQ94ytYyB/HwFDzgOCIaRtSh/MUytHKQID5WHVRoEGtedy1EJwvtV44HkIPAM/oYBQjt5XxUPkFiWg6gxR3kZeAND3p1uI1lqqFQdcm4/CSmmR1KBjWMKonBVjUcpSS3shYNtFgqZpDTywEW3FKChZ08WnIdAgRSFsTYP3ECclJqgtVA8uLGTbNgGPaSsXAukYgKIiGVyJhCAaClOL0pr0iJZgDQWuikzdzw0BW/fllQcq1ACYBwWNCKjlvu+YEqMuYhqoCIFaYBGpwcNfb1RcCQCfqvA9WQtUqKQmqhqu3pwNH1pXflVkPQY+9coQ9YAgiFAbw8k+oJg5VJrpStMEowhRxOWmAqBDRzYPchTOqhRIYpC3cUUFBCC1Ae+M3XJtosqBxBXod5h3M/gFZ58/qLjrjX2Mb60TktkgtRhA520zU8dsSluBVvkXWKhsAFBZX5OZ1HBBA3NIobCC79xuN1mO2kIYHuzKAPIWXMbZR/jRyhpWsgw1ysHu5DLbaUvykNx4J8LBMNtZUZREUiEbLgBsB09UJrZlYa12HADalfbDYLtMAMDu7GFSdn2Nd3XTPSJPlGg1Q3QzNGdb3uv9DtO7zrAG9N+r5no3+7jixNyOOnP5yBp8LvZMt+skY2/Th0p6dG1c51VTZ8qH/9VNZnVT/wh5IC67HyUP42PlP43/7/gHNwZAE5d2sg4AAAAASUVORK5CYII=";
+const B64_bN = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAJ1BMVEUAAAAAAAAYICkxMTlKSlJiKRCDECCDc4ukWkqknKzN1dX2nIP////hzDUEAAAAAXRSTlMAQObYZgAAAyFJREFUWMPt1z9rGzEUAPCTW7iOfsiuc66H0njoWCF3aLbLie6mDQT6BTraXQ6bLIUGDjqpHcyZLMliTvgDGDyFFELMfag+nc6hie+PsnXwA4NB73d6+mOd7Dj72Md/EW74xPxp8jRxlqp4FNobN00XcajUbGQNNrMwTZVaNO3ANE1mSw2UtAMTFU/TdJPE80tLEM/mmA+dOLarafLrDdYPjutZgkb/WKmxHr0l6AvRVXQXECjpQAjhA8dcVz0EA79ZBoQINFg8bKFCFHXS/yGCgRAIpo+mFYq7eLsSHwwYP2omtHAUX1cfUwMeBwEo6uHV+uWdKAQOFE3Ui5/r1QmCdwWg6ewC0l5jfMaZLZzz3ZrgC+avzssA2QGn6/WwHT0BEGhH0Tm1B85BNATKS8dQNNlOg+M6BLZAxyEC0bGryAC9/bqj3SWGYuD2NegtQiT6g/lGQElF7sCAs1s3nC9MHmRRdvJp4F8s5ptpMlEjs4Eq8nOwufSWoZLzMdT+sqcGSDaXc+lJXgsmVwiOFGU6nUnOag/XK78ljmLKPco0qO3CjbsySGSQAQ5cvK7rYryJPdkSmMsox33i1wHaA8ANy00ICxB7VO+/LB+/HNcCnEvxDxA1o24EjGa7wxoIkyb4+5NPTNgAdsIDXdNpdD7UgNUB3yQGEUZL1E5TQwQH0Xedh+cB2AEWRX0NhpSz/PCviGc46LYuxQfCORtYAaZL8R0EXK959agPA86a+k2EK4x7ienVqOzi0LQP9BGOoAl1gJsK+nrBiM4FO9C4B6QaNLbN/QxoTCtHfQ9a9sDJAXO87DQileDbthX3lNOJZR1wbyG/WBHhk1moryld6JWP2r3Y5GAsGEykzvSWmwowicfmyw14tBPqzM684v7nLkLTg7tME8qyk9ULp+Wgc5HkYKokNVPsqaQUAN/e3MginECM2xDfKLEsA+Sas/x8J1gSSL0MIICWAnmzXWjoKplZ8ht/EaWgJ+9MI65C/lwir8/Kdx8xVTjOcylazIDu9RLKV3r7Lvbkn16+IQDA4kIK+FzL27pz/9z9n7V97MMm/gKd0QTKfOGnBAAAAABJRU5ErkJggg==";
+const B64_bP = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAMFBMVEUAAAAQEBCLagCUQQCUWgDFewjNpADVWjnevTnm5ubunDH/c1L/1QD/5oP//7T///+ZBZkLAAAAAXRSTlMAQObYZgAAAlBJREFUWMPtlb9r20AUx0/2P6BnMFZaTJQbiqC82BC0dO7QpQEhtGQKHTQZOmbwJE3XwRiydepQsgQ6JEsHryWTIfigIAovQ4duEbRDIVBw38kNhS53Hlo66DscGu5zet97P06IVq1atfrn6mwLYGjWcEugo/8W4MEG4AXABQAADPNjBvjLdwQeLb8L3HMFpoCT6/ULDXDiCFxgPrliYLBwAryHC5ysfzAwdQQGl5Qv82d6MH3vBgDevlwvn1dKXTgAkk1gnV/lh1Spwp4Hj2TYu6knyw83t0w4JA5IS9r/8vSwNkAhpLQSQ9SnNUsiqVISWW14w/lov64/v/lGzFjLSYYC57sMjEZ3SCvoHowtprXE+Q4SjXbvcAXiyflbmwXCVxvgNVZFV8rzsS1vvWpGRNXOKUnJpvtj6wiYaTKEwdh0nFpzEVUSgM+uCoAsTu1AoOYni69sX/lxFieJvT6Ccrq4VEhSdLPMDsjQCx4vopKQQtHP+jZAkhZeKVWxIuQvyCxAhzSFMlAQAGHB8dkA1DTs6RUopQCGJiZL9QWa+GhzpxHb9u2AB6BmDBAHxf1gjYhNcDANUHjc0nhmT4NUJTVAcwWfHAbHXs+Ukip90eGWcHqBGkD5vL/ynSb+zOxXvUhV4PZERMoocBlM9/XKKt2m/W+g2OIZDfj0aAvAM5uD0ncHlP9rcZPEqgEcY+oeZFyqjXO3W4rj+B2ZzlH0MXHIg5em2ZE5mtN9Fsf2f3hJkm3OhQdZmtqL2zzs92w/cRhKf3SfL1q1atXqf9dPwMHxzH44cogAAAAASUVORK5CYII=";
+const B64_bPromo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAKlBMVEUAAAAQEBBzWhCDUgCUeyCkEAC0gym9pEretGre3t72UkH/vZz/5oP///+iDxV/AAAAAXRSTlMAQObYZgAAAl5JREFUWMPtlrGKFEEQhquZF+hiN2ihzXyAOyYZYZOFAV/BwEQuMTC5aOOm4fyDeQEfQBDU0AdYFqGRPxVUuHcxmN3bcW/2pjY4DNyK++v666+u7hY5xznO8Y/DqT9xvepJgGp7Wgqdt0t/gnSnbXvtbVL0QkQu5+3KCLSaL6RO8xera5v2dhk2dVG8Wy1tdj5rlWQkVjaT3Hy1JEkWeLmyMLrqvn8mSaSKtrL55Sv5OiIvbL12/PSBm/cBi7WxyfHbKz7/1dysbZ2uZUZuftwiXRoF1U8WLL9vAczq2lIznr4kE3BTv6XJJg0fSRLg2jgSLvZtOJyHqh6VWNVxHciCq4Oiq4YsI0QssSyYAW7qw/VkuRiZoATVn4BGDomGJMk0IiooALxBUu73qzomVbDc980lH4AZkGVQ9oLJi4RuJIXz4lQBYKCo6ooXcRo4fsAc8DdRMYnIjKkr/jjQlTvjG3oRiSyRDwAkWffdXhQv4kg+BHS9kUVVKiQxA2TRpgc65jheQ9gp2hHwIiJxrUdcOgBY+mMbjrR6C3QDIu3OcRqfkNAAKANgPfHKhAZAN0hRJkbvXoYpwOV9hgVJlmQAABaS2QSgAYAukjABEnIGgMCis/5KmAJwCQAhKVJnARwSAKgPQOwfCxPgJQCBBQYA4Q7oUQuQRBx2uR4L2GmackkCUr/KASmcCjiDpiHgJTwmEE4EXEASCfaiA4xALFuggRc3bauS272btC18auK0HwKnXgw1u5y6/VVh6JvLCU3erXI5T7qqmtEMgEmTRBRN2uOmP8eJv/VznOM/jT8vNaS9Z3D9TQAAAABJRU5ErkJggg==";
+const B64_bQ = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAJ1BMVEUAAAAQEBAQi6wp5v8xMTFSAABSSkqDg4OUKUGstL3e5u7mOSn////zQlIrAAAAAXRSTlMAQObYZgAAAyNJREFUWMPtljGL2zAUxy0whG56oOhyZGrH+wwdTiBE14MWDFlqEILbbiu5LdCCIdPB9Q7f1uUg3joEDP5yfU9yfE5qx/F80RTk99N7/6f3nhJF53Ve73H9uBtpnz+PtH/6PsZ+kuej7KNl/vw00kE+RvNkmefPd6MCykdpoICGAXbgYFAz42MjUiMBpnk7ScNZbQFe9XAlibeYJi+bfRctga3NtLG/L4p9QHYB0u520b7YtNOq0i4HrhHxQsDD26c47QKk22mYoH3x0AoidtedEe2ADwS0gzauS4LQGloShgGma2JZ7ANM6E4ggkB4BUUjOcZdrXpuDj/xGuDQhGM18G5AWgK85ALqHMfOuZ7zI8CzVJBcFNO6UFjY7Cw+48hBDTyuaheiVwGdpRWvgT+Z4LtM8L7yDvnwojeb2UpFDPwm79PgieiCgNvX6Uox6eAYQISznIDHq9fkm5aOouyT4AmDOVxhQJdXt8kvgYA7DjBKena/efj88XeWCUeAAj4AVBc5fJLTxANW86NdjRbT8iY3YOfbRJhhAO9uvl5dGpfOywyL1B4TUFfffP1XOAuzcqX1ccX13U2rFRi42WYB4IPAl7KcAmyr5BTAV1pZLbazKkl+4j3CYEgAarGtqkWFWeUAeMIxF4w+w7qsqnWVhWoFqt/ecR9Kf76oqm2Z+X7wxQo99tr5dogYAejARw+U6W4n2pdmFABygGYx+PLGa+m0p/FAP6cVKviqheIKiMAKceLQnoZDfRAoBBKhhSZ7jIk+/UfQKX6cMOwJrCOlFQWPCPO+jeUdDkIenUtnN1qTWi3Ihf9m9m8wtrgZ3gCDzlJv7T0Izrx3uw9IrOswcD3qVBgIWlByFYqT6QEgU2bp0YhxlLrQyropPmnx/eMHwLVJ63EpfQRa08AAUT8P7ODNYpLX7ySA94AqTdM9TCh2WLWyGe+x8SIdedhZMYh4718ZYYMLZ4bbJ7RE8GAxkUPt03Spt1c4YeAEF0IDjTPh/Pkw7AGtELCRSTmcEFD4lyWxSiQmHqITl8QqYemIP6HxWMAb87HAqMWj8zqvd7n+AWzBR7VZUIaVAAAAAElFTkSuQmCC";
+const B64_bR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAHlBMVEUAAAAQEBA5OVJKYot7lKS9zcXVUkHe5t7/AP////9PwGjOAAAAAXRSTlMAQObYZgAABIJJREFUWMPtl8Fu4zYQhk17H0C05F30tqJs9FqKdNMeJVLIObYGfo61Y/ARel4UPezb9h/SiRPLGytAT0UIOJKR/+MMh8MZejL5GB/jvx+f/OnFjwTW5H/jpyUzFqAGjxkRZXhoeUMP4ZYBEZ9mvQsye/FvkV0BrMesC6Le50QhWP1CXzRXAO+MsQsG8Sc8enueddE3V5ZgvfctPPIM7A7ePosE+ewq0FEEGiycDs4/Awty2ZU1e3xWzEXAngFJvR4acLYjWrOS/SJa+uVpWgRuYMAdsADaKAZcXAOAdtmcHNqaC+BTsN7QluWIqgGwVRyC5mSguvTo/gA9JT22wTebytQAODai6NTQwN51x03SE89sMBReVCkK35qBgbC/C2F/BnzOxNKpkqT11aWByV1wIYTD6smjk4laAaAe+38BzMLxjoFwPBlw1OeJAEBm4NEMWgxAR2rmEaAHJmCho6EBeJQMYDS5WXrP4WICgDf1FSB6xJ9vc/gBgl3TvIZoZ5AWdzz54w56KSHgRRMpDX0EBgZmYcsAPvIZ8MpoFT26AkyJvbmHgSUDnBLYqxPgajXIi+n612Sg6BiIBqoEFHhzdXm5hDrF6NAFOYfeJSCPgMO51YOoYqx3xz/Co8SUHlHyiGWObWN6uIgIrGj7+S/Ju8aAMwrO6YK//ATYr37/LDk63lkGNPQ5++aGwIwXHB7jclsvWzzgkJE5B6y+ElfxGGMUekzf9nEJRgveEWNbpYa5d/8lrKE/Ql0U8TQ4U06EiYeIR3l53L59iXoUi2YVj4Ops0lecX5XnB8yuzhuh+9qB71fESpZ71NcEhBt5PoCCPrvaBrTozSxvspEzKIqnrrXq55xhP785ccD0SoVGUysJ4Wv5ZMBY5oLIOzVj+//bCKwZc+14OyQpcT8EtF9CYgQd4Fd2u3iCTZzA484X7MJEt6e6tPrjY7jeDyyvhRysurb5Pmi214C+TMQdjvj4z5NUR2NTJ2E1tiYV93rbCIYHBieGPFKetH1MQyvdkLenfW+jmUODSTFXiDQ20E2yeQV55rOeeYpitFza6Br6RczDa7KTLAnK2JsnnoD2WH6wUjBcvlUFbZQCK/wik7hnBsCMCLluYxo7gvWq+myWfXW6uzGrSClZx5Pq85dMx93+RDGYwtMKfN65P0mt0h2PtPm60igpj68BxAMgMCZGOnTgoE9mmM7GqB7dHBn3wH099Zb9w6AL0O2GbnoSdMx0PqHkYBqKtvhjtJRNko/jRcCVI6OHkYBSGB0YdQmS+NMcLUHIcu5pc2IBZTE9V/LeiJAvLXsqfoKjdE4nD4lksjf3DrEhUuxTmUzZp7I9Rsph8Oq8tqUqV6kVBXZz93htaLDKcN3Q3XlIvBKX1Ua15lWs7Agp0Dot0Kz6iu+xFQ6XgV67ojyTQPdhvutiUBdcROqb/yGaLnhmqrwFWqmnpsbBcb2RtURaJER6BIyu5FtHEQhcceoAOib2bBEM5Hx54jTeV3eTLgp5FlKU33Tm1ReT5pCZ5N3DfFO/cf4H45/AayLmHAOcUVvAAAAAElFTkSuQmCC";
+const B64_wB = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAKlBMVEUAAAAQEBBSMQhaWlpzWgh7Wgi0gym0tLTNtBDVtFLe3t7/7hj/9qz///+wwORrAAAAAXRSTlMAQObYZgAAA/RJREFUWMPtlr9rG0kUx3fi/QP2OVp5znsGJ5BAuOYgzXEgsGAKgexiA5vuCoV4IWUqgSHFcD4YUHUQDlSaKwyCFAsuFl6awBUHUWOSkGDQ/3Lvzc5KslarH+URT+P16n3m+37Me7Oed7fu1vezGtsC0dGSlztPVwBXc/+03d9fL4NaQOJMwtfuoXXzuhYQeD597jpg593NxW2r+0/nAFPK+7l72hmNRrd8Em++/jx9HuSlI10HCDhbBN5N/p5FnTsJv9SKsrPR5QJwMweg0U7ASUVZf3Q7aDG/g0Rjd/ZxCuR7/QWgPwcIzI1SR363VPIEAQt12Ov35wGFeNUlTpfZUuCtAtwyZX4jjbigIEgT3DuRvR+Prb0DRC4Rs8X67r127+49iMbj8Uckj0ogM3l3UcIDKIB7T/7EKbBbAG2tBhWfEKWt65NhCZBPTRtrsymxu+gSVQskAWI4jKaATlN+lfZMJWiqDQx4kx+Gf0VYBG2BngWg4pEnrzTqQ5If9nKX1SsGSIKAvqwCJkJ4QT+m0QwwTZYQ6f6l1JW2MTI7A0887yF2C0A6oJnuX0C1Q6XRZxeHIpEDbFh71THsUxIwkFQBMGafmiSkffdZQl0YBhIGeuESIATojXa9MJbmJKIADj4TgKEFTpO42vv0UwoUYRLL88+IJydU6ME6gCKMQiaQ4iCHABIybbJfS6ZLkjxP04eoycZwSg3QHkkClOkVwE+5JjPJALA5wbDcI+fTMxMIihs7Rhf20mZqKcASp8+ookIa7Jy3WSEOwJLLB2thYYvO3WYg5vpKEy4XKAj+SWpBGSIZ2wxCaqid3MDaItfi3IRx5HpABCsuE7C9Fwh2nIhssxuINrYliKtdUwuIJLUSmwHkCHB1QTif/KNV9j5ZiSxNT2MTRDZR/vGHtQBSD1CNKVHQUMfjcY1riqW7BPhRBhEdVjtlaebUKRz/o0iAIu1IHjLU+CRBI6dOwPPH/6qOBfSALhPDQTBRG4JfzC9oGM39TDecsC7VAhQdEVlM40IygOzTCpd8O1LzprRHj4GMRjrWA4UAA5pOkwkAmy/b0fv6LMGPTOi0p0M6TVSyRvpKtenlh7osCd6MhspuXExSkQ7fKtomWBE0BLt0ih4Ud5VIX71VgagHBPshHtHUMGA743Gq1KEHa04rAI3Z3ya8bagYWGcveQD8cW1vz4Zq6zX2O9+4ypRY26wZ4WuaqGUB7T57+O4N1kVgGrNPhg0Ae7OUHzEbAWIyFTi4tnfvGuBgYsrEiy+bAACzQoUMIHgbL8GX9YbjbJqmjvn9ehsg/8W0JsEWPrU+AbzZwidokT+wBeDBFgHMroy7dbf+p+s/FUn51xK+ORAAAAAASUVORK5CYII=";
+const B64_wK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAMFBMVEUAAAAAnAAA5gAQEBA5QVJaWmJaYnN7g5SDcwCDg4u0tL29pBjFADnexTnm5u7/7lp5EjeZAAAAAXRSTlMAQObYZgAABFFJREFUWMPtl8+L20YUxweEqZxbKPS+vrYFgRLXsWtD6bJ7K4ZgaAztxYua7GEvCd2riaEoMbIDpiHag3JQYrxzcKG6GETyPzS6mIqhB9fbtQ7v0oshBPXNyKHbsjO2c95hzaL196M378d8pSXkal2ttSv/ZEvA+xDA3WZHYBBtsS0w22ZHcOremhmbB0gogDdLGtml665L52QMsIAZwMs6yk8AoFFX6a+hAjwOwELIcc0bCuCX1wAuCECshOIOQV6DfPpa6GZD65D/ppZlmaYpL8G1t1xdgz/3UGnRIcrVKT9for4FUDzY3eXIOj0Hvix8DXBjr2WaxfV6MrCsz3YwgnWE29ZMc33fbux+9ckRzA43ng1taBW+gbPx5sNU3i3UoAz1zYGiCYm3OZCnp16CrSZEt/mnTfBHCbjYWJy/OtGXRO+nBukv14ep4awSnbWdFOuqpyKEbaiBpE6c6auIX/U5oacKIDfmY9rohqEQaX/wzQUKfTOb7NLOSlRN7f5bRYAmFXpaKny8aiZjTBGAND1IUH9b/3UFkGohVqWMKSSQvDTe50DIw51IbUwA46RZCrththH9zfUNANqY6GFo8z5XGWtnTb3ccp5yAD8Gqdhp+q6tsVA0JOdhsS85Ifkh/h2BxCCoZ/HEiYPqFL/4HuD4shPFgVPM22/r6TssqI0l1bBKDYmee1/yYgy00tZt23YYi438M3aT6+9Lkj6k+wD+RMORoiOHBXkPnADgr2NZM56+EEBNON+IPcJkOfDDfem53keANrKJok4PBHBmyYHjfW7BWJVznsWUA/GZZUnH46MHx0fi7udOygvbg+Ld+CcF8MWDHxGY432xbywOazC7GxetFlEBC/gZI5iVEBdmX4qLLWkAt3hgHXn8sYJV7ZhmF4HzWG75ebRu6x5kDxV8noxCARiKp2jR2mvxnGuCWAFy7/SSlrUnmjbDAeERyghME2mIHAIH3GioT/kaBXjGnak8Qi6xigigviyAboDj60Qq1xi2MAVqZnoadloweqVyDY3e43Nq5JpiR6HdoiOlzZAyunfiB4QTfieccKCjdAF+eCsB0QPTvOlWwjIdxY9VxqTxqTZDo4v7yLmD8DEdTWEd4A9Cm/vYHdetBtSJYJ3bu35mYxyIy07gKZ6SeWyCmxgPP+WA5roDNmE1FeB5fIaMbkHYnemabz5HAJ4oADRvH31S1P6OOfitMKUeLBTjiiF8J6pkgPuMXY8QkIfII5AYjqEzQySBXhadnII8BHfvuYGtdYTJl1hUjRaqEBxo8pvrAnDYrQGrcXuWAj2YU19UiFOs4w6wcSAH9OV7QFyZJexdpJ33pM1GoPkvgGk/cs2IVCYq4Dt64UvNdg18HQ97MqC/hG9//w8w4LcJJ1JgOtcvPjW17L3E2RqYSgCd9er6xZcqrbPaqRT43/nVMqH+t6xIEhuVAo7EUTQZ0JFsVdv8v5yrdbW2WP8AkLn1L3HIymgAAAAASUVORK5CYII=";
+const B64_wN = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAALVBMVEUAAAAAAABBSlJzMTFze4OLUjHFlGrFxcXeEBDmYinuxYv/nBj/3lL/5sX///9R8weUAAAAAXRSTlMAQObYZgAABFJJREFUWMPtl09rG0cUwFeIlhW+SDVRE99qCr0qFESsoEto74FiUQQ5CNPBFvjSY08LgTAbu7ClJOzr6rIYL9WAQL1pmf0AFTuXEqLDwn6Bfoq+Nys5qr1/lFuhfrC6+P3m/X8zNox7uZf/hAA4H6O+B0oRIXcFIqXUEpyGkvPdDCgSAIhUvCsg5RIBb2cgllJ6IQJqvisQepEKox0BI4olHEm1VLsCDSl/fSdVPFnH0IBS9WMCXr5Df+JYl68xUaXEi+eelP2TiHKlgQm65vJi4NP3ngz7r58SEDaw4hi/jJaWaRUA9fS7DMDkhsiCJFkYtmuYeXa+7vSDI+i9ehqF8kZCbnMOrg05Vvp/7Qv/5di9wtJ5G33XIH0OeUD9Z38s0uTUh3Cx1scusTiJ6ebF8WR4EKRp4IPnbc7neLLJ8cuNu/561E9TETyCDYBnl1aud54iIB4B5Qc8sO0KoovA1VgcgY1JdYFz1y0HarP0/OonMQISm2ey9XczD3jyt/CB48muzU3U34o2p3r9NNkfC5/0taqp9TcNyO8ulC7FPPTXvmwOnEDDIcpe3EluTQPBw3+5jwM1wUWCxbhb7joC10I81N6vi0WbIXYuVWiZbk6/JhowstLqLRjFURw6l1LmpfgTBAZCdNYDq5ZGw4mkjBYmFSanJPWZEAdCnGwAMCZ/UpvAhe6TvOa4JuBKq+O8KVAXWVdpj/JaXIzGQgSd9UDHkV5tersVtFWrLVA6DQdQFfMTXehGDGVo8fzR7hHg4z7OTubAAU/3Qll0b2hAcD0RC1jgeHLb5TaGUQbM0qn0BMwEGtDiQjmQpgn8hsOUJt+TNifHrHIgpQ+FALg9F7cSSx7dyHsCLLNk8G4B2gSOQpFDoIEtfTJhldwPGtg2kKbPSy8Ux+gKkaTnuwKG5wyGYvbBpyRJ/PJL7g0bimR1A8xmohQA9Yb9gN26Ph69q7AA0YCALGrdIxUWGhPG2EEGkH6A36g0hgECIw2sSH8sbga8oMwrAtovqGBCHA8JaJYB/ZSxVrM2QGBw3WIHQQWAe4y1OG2bNH3cQltVQH+1aoGtgaRZo2gqYuiPr8HNLCVNo00Jy7K0Ny8CcHE7GsDVhACtkBO9LoumzdfNjACWC316PBYBa9I7qmh4fH1p4E5Gz4ExQCussxfF8wKnerS4acUmTdxkb9nZL0jg8wafHvkvrnrWOfWx3wgVf8XOvD/28UfhHSwLfAqaGpgC3jvokifn3VNcsPj6KAibfUG/Y1p8bpfhDe+0Ty9liHdcfhDtQw0IXHTc6J7hI9moswvbLixF7UcNTD3cvXV2hjOO2eVu8QO+9k0zA0LLeHCs26h2yslCkbSy7OI6rWnvNOBW/Y/Qm3LrA8C4Vf58xeT+jg1Sa2WN/WDAq97HCGy58Pm3zSqgK6ZbafjysBL4jG0NzSaUsmfWV8+2gVarEjh8VunELeDwI4FqJ+7lfyH/APztHlpA7voTAAAAAElFTkSuQmCC";
+const B64_wP = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAKlBMVEUAAAAAAAApKSlBQUpiMQhzc4OcUgDFIBjelADmWkH2vSD25lL/9qT////Vai+KAAAAAXRSTlMAQObYZgAAAdlJREFUWMPtlsFqwkAQhjclhB6ztRRReqiHXnoSbz0piLX2JcwliD6A0JsgEuoDlNJTQKzsnkJpSDN9A3PpG3U2ST12J4dCKftjNML/MTObndkwZmRkZPTX5Vb0Wxe/DrQq5nRSHehWBK4PQKtFAWpiU9wctTodygI0SsCZQqfTJgK+P3ZmgAClfltsJ9k+Qf8bKQACQZZlgHptqwC+lhh+ZNleAVz5HRjrAEwGUi4Tr/wX61JaSMzm8wrygo9BD5wjENVKYI3hNDnZbRiqlHJfAHrAuVQmeH9eqooJwB3AABN5egyL+rVF3MrldDtJ5/OwDKADbkSuHJAVgJf7kE1FTmg2lCNKheoOCa7froU2OSo5owLSHeG33s+aJQCuTfKzJhQBsNjRlpEAJHZSrY4tKBNkHeNSqk3XZXUKYEFSApH18D1BfgYAmwZ7CKJhsOsRgHUB7CAMgj5lGM9AIfgJ6wtGA2Ko45UK7lPmUjPGmRThlQr3zCMAM/BxhXz1MLhPAKyiBwCkEH2PkJIlCn+apiKklGDlPQBCYoSQdKBMxUG0o6hx8O9oh53VEAHnqndIj42x/kotpjWYrGgB7Djp5c6R8GgR+Gn5G0cVXwl41bcUIyMjo/+qLw92FGczGN4XAAAAAElFTkSuQmCC";
+const B64_wPromo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAMFBMVEUAAAAAAAA5OUFaKSliYmpzQTGLYhCUQUG9GAi9WjHeezHmvYP2rCn/vQD/3lr/7tVH3hNWAAAAAXRSTlMAQObYZgAAAyhJREFUWMPtljFr20AUx09RbEMnK6YtNQ5pRT5AgojSpKbQ4g8QE2To4OISJGgggZCChggyZMmaqSh0MRmMj0A/QAOhmAxxj5YOzhB6XkoylFh7aUC9O8my21onaevgB8aWeT/d/3/37u4BMI5xjCMiRGUuWb66ljDfyCYCVKOcbABDLwdeSMQANF+RohoklGhFPqCQ7A08H21B9wDRMHQ8Oj/9F0CEL9KRdNy9GvnOzdofHhYRQm0TLBjVrrMSA9iyEI1tTcNOrxYNZGYKDGhpFew4IZKuhx7WJZpez3/UiKIrpRYFpG7Y+2ckCnzPAnUkMCT1zg1qFRGSJHS3Mk+mtzIScAbAy5t3niRUl8ijNlJS2rkYwN9aioUoBMNLNu0MTDxF7f29HPrstLlAYEIpEmC/iBznB8ymlFCAmEivsPohhh/vIQJcQqWih+3Uzd412PCAdcRmycGXsGIYoUC3W2NA6nUDeYGhSao1DNjo9S4ws7HcB9omOg920r9At4txh/7Kw2MPaJDvs9XQacLYB8Q+QKMZehikKMAWT4Do1D3xVYWvBAMw2yzWF9d1PQDWw/dxNQAKJN+99QaYiwDYNO1QwGX525yTIhW43mXACQXqUQB1nTl1fU18gGqqUhOiB/yK8MyAaWoi47p9E7CR5Wq6SFETTwZA0+Qe+tUOmO4A8VMAnJtmdrJUKnEAAa9k+gApEAjflCRp9nmYpq8A3OtYPvCTLQQ9BoTZMGGk0IRXFhoCmlusup5xjAgW8qaVnhpvTQYAHgCKPmCxLeQBJd5kFdB7BhSHim+SC7SPhwAvc4IHCBDuEFG3FIAxgQb6cAKX6QBHMvtP5i54HtqLkFDkAw/kh3SAR9wrVLBtW1k6PDqEsDk/RYgJOaKNyBFCkqQl2LSzwpQsy1LUNU0I8k5xiX4JBI3uNXL2AT2gHthxW5plSAFw396K2cz4K5z3uOj8on9XFVA9XjeG/MQCasXJJ5fIcd0v3LMYrtWFNeOFl6fCOJ1fzlA1qd9nxQEEbUHqN3KxABCsrKjrlUTNqLi6lrDbLZeTda9EXLL2eBzjGMd/EL8BJK7yir0DpJ0AAAAASUVORK5CYII=";
+const B64_wQ = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAJFBMVEUAAAAAAAA5IFI5OVJqMZyDe5yUQb20Su60rMXe1ebu5u7////IHWIfAAAAAXRSTlMAQObYZgAAAytJREFUWMPtlrFu2zAQhqmoKjpKsQXIY42gswMmhYUuMSo4HaOqBKysdfUIzWyoBKhugSuA17VL7Vfoy/VIKXYLWBQ9FF18i5T4Pt79pzuShJzsZCf7r/aCM/Xw2J0l4MFaPXKo238kSdIDwJ0GeOtfFEVyYwYmChAN8KxIgqRYmkIA1Ixeg2g0zJcBIcPCNwA5sA3UUkyaADP1GM5MQL3dQi6FXvR5s7ZjBO4RgBaYLxsgMeTEtgoQLdAuPewGvHy73SggVH+9sgDuQZkQK6X5KRUTgPl83zAEsExnO6BbtYvA9keNQLkHnMQA/ISvmze/hCgXEzuAQ/74WgHsT8BQ12lVpZ9Q9CXjCMz6gWtVIiH4JMx2wNAEONq/pCRMCbmwAQTnjDLfYehz0TgaAS9kA8pSEv4FmLrPGfguS50AM2pFoGYTQHB+eBqJwBbwcOQqKbiK0ORkrKoaOTRZBraAG4NE4JoFDTDrGVEnjKECKBnLw70IQ1EjHkuMUGYsf/TJ7lt3+o8ki+saREhpDo8BOQs6088mxMtiENStueChT4IRgB/LrmFjgtMYYE2x/Rilqe4qWMdwdRjIqK7mCv1JJDhTAB2tp0IeBjxVGZAD/SPqUH3kQTlF9HBKblVjPo9NYSsEMIKLuxnP6GHRriizXLbz+CXhKgQC+LzqqBKdUMn1T+7lvHjHKPcdkYbdAK7HqX6Jvz0Uy6ySKcnOX2aLdRfgQNDKv30oChTEz8dJElRw2TmZfturLVCneLq97QZI8NTct5+Lj9ACybSc9R2iMC8agA1ViKsbW4BrwDxrO2CmAZ3TrO9gzyUCyQjU17YIgJ3HP6BbKFgD9AbAS8Z75ccaYNYbgLiMjVUIDQT9/mp82PhCh0gDq+sMhvDPxuMB00NhB+BxqAk7gERMXzNw+04tAd4AjiWAw9e+hUcDdiKm+tLQ5GQDuJXMjgLwOtnOHqr3LToJN+4WcIToVe0tKpCrtiMcLrJewWUOTwkRJxLtJzQAuN2v9vuI4H0ALip2PhGIat2XkxMMdq8VLPBEsb/mIxCBPAIg0crZC7IKgcfcMQFOdrJ/ar8BJycwp3/4ZdUAAAAASUVORK5CYII=";
+const B64_wR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAGFBMVEUAAAAQEBBSSkqDe3u9tLTe1dX27u7////mZt3+AAAAAXRSTlMAQObYZgAAA8tJREFUWMPtlj2T4jgQho29PwBZkI8+fPFIMpvbai5frK7Nb6oun2Dr/v51y4adOYSB7IJRkdj0o/7UK1fV1/pad9c3/yxwehJo/ofA9CyQXp8FXj49aq3NM0A3IaJfc/rtE1AjHokYXm4DB1j+DLSqPSJgAhjXgNfZnDZG1yFOAQCGNSByJjiv0z70APTbrgDsPiwA/qDtIfb3gDqnysvumAi9WgEo3g7TEhIMDIxB33RxBPlKxTnloCY7A6BvAk0aoxYWLHgCKFvIMfkVIIKDUUsK3Bq2lTDaVaAngKIm4zFHM1jj4+0cfLJzEK4/A5p77kWZaP5KduQyQiu5XzPgQ3C6XNjvpzRYiBSOl8F+AopBNX9MHBD5MEH5bA9OG3MT6A+YzUyksNvsIbbaSHrQpZgaPCAPM3WWljOjpnRarSjnMnCY8jywCyZaE3TkvU0QxpeAbpmgxB48mYZgGNCKNigBlmaOxxRk6MmU0g2GstVa8gYFoKaYDpi8CD6nwS6c0JwEp3Fdpvo04imanydqgTkDlRA7BlShrv6Xxajwn3c9p+0IIKvdALlO1zG59w7D/v1XfyksOaiqfdrFIEp1tbpLQbU81cMCbLM2DULoEtDhYQoyD5DLeQZBbzfcTBrwwnAcCHBH1i0TuJKC7WuRux99AfieMJJ0YTRO8oTmcZEuN586dwU0f7+hp8ZNNAoiKMn/Nx06FgMO8Br48y35xZ6a6+YocdxP/VgE6ult6nDqqbtCq3wmG45/30MsA3A4kT1EIdo4/1szMHAGxWGyR/R0asiBjOMZ6BkwZaDmkoISQtg4VBdglAx4VTijO5Iwthd2zClzDyagVy0NX+lM1+KFzUULOaJaho7Gl3pM724pWTsDbh6VQHeW0Zc52ogbgIWlppNErue5yTt/7cdwDn3czhmj54KeHaiSxG5olM0cEV90ecwXxfBRFoAaaNKG7dIWHGUmcoRQPKaUKf7IrzddRNRKshBkWaTSipK+njtku3RInvuSn5tYVJqPV8s+2fD72Niyln38zBhp0M0FaMPtm3EuF+JHhWxCu+6AAaQZOrfKRqdWHeS2ccbLowx37Elo6Xa/RKHFnYCylv8+NHXU7fYuwHo5W/ndnR4sQwKzclQB3CNARccoN7kG0u5HAMNq0+itDN4rfTcFmm6W4JY1PKji2P03hwR98HxHh4cyYCCOrOJ8/T4CUEiQZV8VL5MCcCSAQvJK6wdSZuVOUSs6+Kp9yAF/GHidvwM24iEH1YZ21o+Gswjdlm5PUT21xJP2X+trPbX+BZSdEYF7OhTZAAAAAElFTkSuQmCC";
+const B64_bQ_new = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAMFBMVEUAAAAQEBBBQWpBUotKMXNSe7RqMTFzMaRztNWLi6zFKSDFzd7elDnme0r/1Vr///89256UAAAAAXRSTlMAQObYZgAAAklJREFUWMPtljFLHFEUhd9OQNhuR1hYXMKsAwZ1iiHIgm1gwUBSZJUHSWe1RSBNEB4hhagsvCoaUTayxWBj8boZQmQ5hWX+Q8B/EISZJrNMcdLEtN6t3VPfj3vv457DU2quueZ6FNIz1j+xb2YDWnYoLfXCjqpfNK3tSIG3G/Ukt6uH4YkQ0Dpmbg/DeKrqaxJg+I7M7UoY8CKhoItnY5KLepkkK8kiqzHJwqcY8JjwXhAB04//gYnkpbyRif/VV5nkXeORiXkaildQkTH7U2Ni6QoqHplkava2yCqTAX8MR3uvDSusiIBgus+zl3emAkLRMdV4w2+tOwNk20KAPG/9/oRspSG714S8/vLzM863hUCbwLUBwmWhhWoAgAmkEyk1Bl7BZyhOgHp01vv+gh0x4K35vV4gB+pJFfq9oBA3GJM8acqBOll9VVEiBmKSuZeyUEoNBrLLmDZOUxZqYXD7a1cQM+RpY5ySCx9unXsYaFmyCJmRT2+dBFi1ZB4wIJecc1cPr1AelzZ3g4Bcd85dSnYu7YFzAZnLgb5zMVk45xoSg1rbd5ckueSudgUZcHNk1++BS4nfNo+Gz94HJO2Bk1iotnmk2z8CsrTaFxl003bbKcvjcqhlHm3abpTSHpc73b4sA3QfMS0rvfNcBnS3MyYktBbO5LexRkLvSIEakBWA1htCQEVIF1Nfa70hzUogbcNv6r6SAmMAWPalWekhwgSQJ18NE2CMVP69ijIgmgVoI0KWNtQMM2WpP0O9Uv5s5XPNNdfj0V9EClg700K9/QAAAABJRU5ErkJggg==";
+const B64_wQ_new = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAKlBMVEUAAAAAAAAxe0FzvXN7i7SDKUqL5ouktM209pTNzebVSnPu7v//e5T////VpvOtAAAAAXRSTlMAQObYZgAAAt9JREFUWMPt1j9r20AUAPC7QHaf3boILfFdMP0zWReExzrWonrO0NLFcrk9EAg0Ww1Gq42gCE0pnQwZBAYj7hsUMnTst+mdTm5UIsVPpaPfYmzez++90+kkhA5xCGBQ2jA/XNCTJvnDMBQBXBzNwzBciAAMXg7D+XAhxEmDAsNQCG/aoICa4SwVLTAYhotPk9RtNenolezwKRTMw0UgFRjAOtLgy6nceGMO6qmvZ359P8lUCRDo9sPh/OfdRKYcCoQb3N7dZB4UcAXW9wm4Ag5EP/j8S162gauEHbfvZIlsUyBAHeY4Um7aDAqw4/A36YiyGXAvIcIoeXFJXTBAhPSu20xAtzfClHpLKqbgAscXp0lECDgffVxfyDF0iQxYJ2PWDEQO4fCWjn+sxwPUGTQA33kPYQ49Lo/Yh2/OrdoiAiYo48/frxTAQuw/YCmlgg+w/05PTIQI9hShQsW0Zfkjs0XUN/rUyX80Yzof2X6xpFrMnhi+bfLxRu6uQVeXrD8yuyLfQQq83e1DJZxe/TYl5mMro4efuvvPZHsrN4/+ZQ/40xPo/pE3slzi/wNbgyY92dmkEcAyUvkNesJypMG2QUc9DeQVGGwMAE9hrwqwgY6wA9KDgezcUslZLiAEx9TWybFCWQYgdmSA/CqTJIljz9szvLUqgLz2/FhH9LQxIMlJ5MVxYeqJdf4AZFYU0aQW0BIoFYm92kViVrGqRZFdFa8OOIMy0FUKUTkHjhjTVzopi6Vl5qgSeJVXKJeIPH9pSiwrAWPcNle6iDE/i58Z0aoCnOcgv7HzTUtIxyfEqinxALaFUAc5Vocz1qQODPLM7bUePsqfFOYIrOpJg9m06OZqkmVp+ZWiCsTMdV1717+d/NVF1duBxWYzsQMyzfYe3dbKFYIU+aSqiUdDqKcQMiVS7C8Bt2hfPUFwDloI8kpjrfotZErA3jZwfnmwDQZFG0oQ1Chww/xDHOJf4jdHiqcT2fcNFAAAAABJRU5ErkJggg==";
+const B64_wR_new = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAKlBMVEUAAAAQEBAgICApKTFBOUpiYmpzWjmDe1qLi5y0OUrFnFrV1dXmzUH/zXtCLfpLAAAAAXRSTlMAQObYZgAAA3NJREFUWMPt1kFrG0cUAGAv0Q/YqXeDkGoIxoKCL2lXujQUMt43ZJPY0FXmgcGnQgu99FbwpRfVCgz4FMglxyQ+CXJwkEHwbsFHXQImh8L+l76Z2cRqtdJKp0LRk0EY7bfvzezMm93a2sQmNvG/DVjz+sYkXA88nQy2tgR/Vk33lAahQIFhEK6UrkFkRIw9zOPc6XoAIFEjPkMM75yTqUshAPn2KWIXMelSLQgU2lDu75kGmtTUFOBMcFWQ1YAY/xU6C2sBgJoVtUD/E6CsG4M+vAZ369LldQD+mDoAACsArgmmJZj6FOGKQD+aXluQ4491wNeiDz2QtAJQtwDaNF7hUStlZ5ehlkRX8HAp4OnUCA5wHpk8oJPxUsAXaru+XUAEUpzQw6Vg+ruywA0dohRSQUuKCjT42fErBKKkC0oc6yWAZ8cVc3htxxx93+VMYrgUlA+av3nMo67i/+OFNanPi7UEo9FbfKJQVqe4kySAswAYXMDRDepoQU+icZL0VLlYGbRGo4IDjkTlGmycE8fY77QSvCtcfJSVQpx/Bkni0rTeFV78FeeVSaxwa5XIEtgpSlDEqKpIAMZ0GJzY2ngKZFF8Kmvip6/n93c8BgeO3WiY8KW/lSl292AetMenwg3ZGOOJBcKCqNOHcCEAkTGxaX4oPn3UO7amTj+dAwHR17+6ZjQRQkRMxhZgXtzAa+zPV8QA2h27b+iRON2/ZHUDR79YgBLzikk6n0iyoE2Hd0/338PejsKjGHcYQFUPDIx5Qe/91p9+IPoOGOTI4IL7/7150MuGj+lPXrEM4ICo60FejBSD3QqgFU/oXgpNPuleEp1By16Zjxhg/6AC8AQ1h1pKacwr2J+cyQt7FqnWG/6hf6+6K2nF20CaIeA3xgEmrYNFoOeXdoTS1mC6kesH+U+dRW18uzd7lgDEZcfvLDpZgnRGaJA/o+/4iwHcHli85+7ueuDGlt6vEhGkZb+3X1/5c5tBxg+nasc1HEjAh/THqg6DoRlGlUANwPVfn+gLaDIYVILseSQjgHDbAb4i5ZYAYTMzmRFVFZnjQXPAdw5sIgaNM1I82qBpZGXTYMAf+1OURraiBlIe8XcgFhymwjwX225+RQDfcol8/lwufRcQt5Xam2YProjkGq+MQfuKLtd6zQyEWPO1dBOb2MR/Hn8DLjXT6C5mb1kAAAAASUVORK5CYII=";
+
+
+const DEX_B64 = {
+  wK: B64_wK, wQ: B64_wQ_new, wR: B64_wR_new, wB: B64_wB, wN: B64_wN, wP: B64_wP,
+  bK: B64_wQ, bQ: B64_bQ_new, bR: B64_bR, bB: B64_bB, bN: B64_bN, bP: B64_bP
+};
+// 士兵抵達底線時的「進化」外觀（走法仍是后）
+const PROMO_B64 = { w: B64_wPromo, b: B64_bPromo };
+
+const NAMES = {
+  wK:'阿爾宙斯', wQ:'沙奈朵', wR:'鐵甲暴龍', wB:'胡地', wN:'烈焰馬', wP:'皮卡丘',
+  bK:'超夢', bQ:'雪妖女', bR:'大鋼蛇', bB:'耿鬼', bN:'黑魯加', bP:'喵喵'
+};
+const PROMO_NAMES = { w:'雷丘', b:'貓老大' };
+const ROLE_LABEL = { K:'王 (King)', Q:'后 (Queen)', R:'城堡 (Rook)', B:'主教 (Bishop)', N:'騎士 (Knight)', P:'兵 (Pawn)' };
+// 西洋棋標準符號，白/黑各一套，讓小朋友同時認識棋子本名
+const CHESS_SYMBOL = {
+  w: { K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙' },
+  b: { K:'♚', Q:'♛', R:'♜', B:'♝', N:'♞', P:'♟' }
+};
+function symbolFor(piece){ return CHESS_SYMBOL[piece.color][piece.type]; }
+
+/* ---------- 50 個殘局解謎（由簡單到困難，經過程式驗證每一題都真的能將死） ---------- */
+const PUZZLES = [{"id":1,"difficulty":"easy","title":"底線將死：城堡的直線攻擊","hint":"把城堡移到最底（或最頂）那一排，讓對方國王完全無路可逃！","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"g7","color":"b","type":"P"},{"sq":"h7","color":"b","type":"P"},{"sq":"e5","color":"w","type":"R"},{"sq":"a1","color":"w","type":"K"}],"solution":[["e5","e8"]]},{"id":2,"difficulty":"easy","title":"边線將死：王后靠近包夾","hint":"讓王后靠近敵方國王，並確保自己的國王在旁邊保護王后。","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"g6","color":"w","type":"K"},{"sq":"h1","color":"w","type":"Q"}],"solution":[["h1","h7"]]},{"id":3,"difficulty":"easy","title":"雙城堡階梯將死","hint":"一支城堡先卡住國王的逃跑路線，另一支再上前將死！","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"a7","color":"w","type":"R"},{"sq":"b5","color":"w","type":"R"},{"sq":"a3","color":"w","type":"K"}],"solution":[["b5","b8"]]},{"id":4,"difficulty":"easy","title":"悶殺：騎士的奇襲","hint":"當敵方國王被自己的棋子團團圍住時，騎士就能一擊致命。","turn":"w","pieces":[{"sq":"g8","color":"b","type":"R"},{"sq":"h8","color":"b","type":"K"},{"sq":"g7","color":"b","type":"P"},{"sq":"h7","color":"b","type":"P"},{"sq":"d6","color":"w","type":"N"},{"sq":"a1","color":"w","type":"K"}],"solution":[["d6","f7"]]},{"id":5,"difficulty":"easy","title":"車王聯手將死","hint":"國王先幫忙擋住敵方國王的逃跑格子，城堡再補上一刀。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"b6","color":"w","type":"K"},{"sq":"h5","color":"w","type":"R"}],"solution":[["h5","h8"]]},{"id":6,"difficulty":"easy","title":"底線將死：城堡的直線攻擊","hint":"把城堡移到最底（或最頂）那一排，讓對方國王完全無路可逃！","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"a7","color":"b","type":"P"},{"sq":"b7","color":"b","type":"P"},{"sq":"d5","color":"w","type":"R"},{"sq":"h1","color":"w","type":"K"}],"solution":[["d5","d8"]]},{"id":7,"difficulty":"easy","title":"边線將死：王后靠近包夾","hint":"讓王后靠近敵方國王，並確保自己的國王在旁邊保護王后。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"b6","color":"w","type":"K"},{"sq":"a1","color":"w","type":"Q"}],"solution":[["a1","a7"]]},{"id":8,"difficulty":"easy","title":"雙城堡階梯將死","hint":"一支城堡先卡住國王的逃跑路線，另一支再上前將死！","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"h7","color":"w","type":"R"},{"sq":"g5","color":"w","type":"R"},{"sq":"h3","color":"w","type":"K"}],"solution":[["g5","g8"]]},{"id":9,"difficulty":"easy","title":"悶殺：騎士的奇襲","hint":"當敵方國王被自己的棋子團團圍住時，騎士就能一擊致命。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"b8","color":"b","type":"R"},{"sq":"a7","color":"b","type":"P"},{"sq":"b7","color":"b","type":"P"},{"sq":"e6","color":"w","type":"N"},{"sq":"h1","color":"w","type":"K"}],"solution":[["e6","c7"]]},{"id":10,"difficulty":"easy","title":"車王聯手將死","hint":"國王先幫忙擋住敵方國王的逃跑格子，城堡再補上一刀。","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"g6","color":"w","type":"K"},{"sq":"a5","color":"w","type":"R"}],"solution":[["a5","a8"]]},{"id":11,"difficulty":"easy","title":"底線將死：城堡的直線攻擊","hint":"把城堡移到最底（或最頂）那一排，讓對方國王完全無路可逃！","turn":"b","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"e4","color":"b","type":"R"},{"sq":"g2","color":"w","type":"P"},{"sq":"h2","color":"w","type":"P"},{"sq":"h1","color":"w","type":"K"}],"solution":[["e4","e1"]]},{"id":12,"difficulty":"easy","title":"边線將死：王后靠近包夾","hint":"讓王后靠近敵方國王，並確保自己的國王在旁邊保護王后。","turn":"w","pieces":[{"sq":"h8","color":"w","type":"Q"},{"sq":"g3","color":"w","type":"K"},{"sq":"h1","color":"b","type":"K"}],"solution":[["h8","h2"]]},{"id":13,"difficulty":"easy","title":"雙城堡階梯將死","hint":"一支城堡先卡住國王的逃跑路線，另一支再上前將死！","turn":"w","pieces":[{"sq":"a6","color":"w","type":"K"},{"sq":"b4","color":"w","type":"R"},{"sq":"a2","color":"w","type":"R"},{"sq":"h1","color":"b","type":"K"}],"solution":[["b4","b1"]]},{"id":14,"difficulty":"easy","title":"悶殺：騎士的奇襲","hint":"當敵方國王被自己的棋子團團圍住時，騎士就能一擊致命。","turn":"w","pieces":[{"sq":"a8","color":"w","type":"K"},{"sq":"d3","color":"w","type":"N"},{"sq":"g2","color":"b","type":"P"},{"sq":"h2","color":"b","type":"P"},{"sq":"g1","color":"b","type":"R"},{"sq":"h1","color":"b","type":"K"}],"solution":[["d3","f2"]]},{"id":15,"difficulty":"easy","title":"車王聯手將死","hint":"國王先幫忙擋住敵方國王的逃跑格子，城堡再補上一刀。","turn":"w","pieces":[{"sq":"h4","color":"w","type":"R"},{"sq":"b3","color":"w","type":"K"},{"sq":"a1","color":"b","type":"K"}],"solution":[["h4","h1"]]},{"id":16,"difficulty":"easy","title":"底線將死：城堡的直線攻擊","hint":"把城堡移到最底（或最頂）那一排，讓對方國王完全無路可逃！","turn":"b","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"d4","color":"b","type":"R"},{"sq":"a2","color":"w","type":"P"},{"sq":"b2","color":"w","type":"P"},{"sq":"a1","color":"w","type":"K"}],"solution":[["d4","d1"]]},{"id":17,"difficulty":"easy","title":"边線將死：王后靠近包夾","hint":"讓王后靠近敵方國王，並確保自己的國王在旁邊保護王后。","turn":"w","pieces":[{"sq":"a8","color":"w","type":"Q"},{"sq":"b3","color":"w","type":"K"},{"sq":"a1","color":"b","type":"K"}],"solution":[["a8","a2"]]},{"id":18,"difficulty":"easy","title":"雙城堡階梯將死","hint":"一支城堡先卡住國王的逃跑路線，另一支再上前將死！","turn":"w","pieces":[{"sq":"h6","color":"w","type":"K"},{"sq":"g4","color":"w","type":"R"},{"sq":"h2","color":"w","type":"R"},{"sq":"a1","color":"b","type":"K"}],"solution":[["g4","g1"]]},{"id":19,"difficulty":"easy","title":"悶殺：騎士的奇襲","hint":"當敵方國王被自己的棋子團團圍住時，騎士就能一擊致命。","turn":"w","pieces":[{"sq":"h8","color":"w","type":"K"},{"sq":"e3","color":"w","type":"N"},{"sq":"a2","color":"b","type":"P"},{"sq":"b2","color":"b","type":"P"},{"sq":"a1","color":"b","type":"K"},{"sq":"b1","color":"b","type":"R"}],"solution":[["e3","c2"]]},{"id":20,"difficulty":"easy","title":"車王聯手將死","hint":"國王先幫忙擋住敵方國王的逃跑格子，城堡再補上一刀。","turn":"w","pieces":[{"sq":"a4","color":"w","type":"R"},{"sq":"g3","color":"w","type":"K"},{"sq":"h1","color":"b","type":"K"}],"solution":[["a4","a1"]]},{"id":21,"difficulty":"medium","title":"底線將死（有陷阱棋子）","hint":"棋盤上有兩支城堡，只有一支能完成將死，仔細看清楚！","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"g7","color":"b","type":"P"},{"sq":"h7","color":"b","type":"P"},{"sq":"c5","color":"b","type":"N"},{"sq":"e5","color":"w","type":"R"},{"sq":"a4","color":"w","type":"R"},{"sq":"a1","color":"w","type":"K"}],"solution":[["e5","e8"]]},{"id":22,"difficulty":"medium","title":"边線將死（別被騎士騙了）","hint":"棋盤上的騎士只是障眼法，真正的答案還是靠王后。","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"b7","color":"b","type":"P"},{"sq":"g6","color":"w","type":"K"},{"sq":"c3","color":"w","type":"N"},{"sq":"h1","color":"w","type":"Q"}],"solution":[["h1","h7"]]},{"id":23,"difficulty":"medium","title":"悶殺（多了幾個旁觀者）","hint":"主教離事發地點很遠，真正能將死的還是那隻騎士。","turn":"w","pieces":[{"sq":"g8","color":"b","type":"R"},{"sq":"h8","color":"b","type":"K"},{"sq":"g7","color":"b","type":"P"},{"sq":"h7","color":"b","type":"P"},{"sq":"a6","color":"b","type":"P"},{"sq":"d6","color":"w","type":"N"},{"sq":"c2","color":"w","type":"B"},{"sq":"a1","color":"w","type":"K"}],"solution":[["d6","f7"]]},{"id":24,"difficulty":"medium","title":"雙城堡階梯（有隻迷路的馬）","hint":"對方那隻騎士離得很遠，幫不上忙，专心用兩支城堡。","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"a7","color":"w","type":"R"},{"sq":"b5","color":"w","type":"R"},{"sq":"d4","color":"b","type":"N"},{"sq":"a3","color":"w","type":"K"}],"solution":[["b5","b8"]]},{"id":25,"difficulty":"medium","title":"車王聯手（多一個兵）","hint":"那個多出來的兵不影響任何逃跑格子，思路跟基本款一樣。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"a6","color":"b","type":"P"},{"sq":"b6","color":"w","type":"K"},{"sq":"h5","color":"w","type":"R"}],"solution":[["h5","h8"]]},{"id":26,"difficulty":"medium","title":"底線將死（有陷阱棋子）","hint":"棋盤上有兩支城堡，只有一支能完成將死，仔細看清楚！","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"a7","color":"b","type":"P"},{"sq":"b7","color":"b","type":"P"},{"sq":"d5","color":"w","type":"R"},{"sq":"f5","color":"b","type":"N"},{"sq":"h4","color":"w","type":"R"},{"sq":"h1","color":"w","type":"K"}],"solution":[["d5","d8"]]},{"id":27,"difficulty":"medium","title":"边線將死（別被騎士騙了）","hint":"棋盤上的騎士只是障眼法，真正的答案還是靠王后。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"g7","color":"b","type":"P"},{"sq":"b6","color":"w","type":"K"},{"sq":"f3","color":"w","type":"N"},{"sq":"a1","color":"w","type":"Q"}],"solution":[["a1","a7"]]},{"id":28,"difficulty":"medium","title":"悶殺（多了幾個旁觀者）","hint":"主教離事發地點很遠，真正能將死的還是那隻騎士。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"b8","color":"b","type":"R"},{"sq":"a7","color":"b","type":"P"},{"sq":"b7","color":"b","type":"P"},{"sq":"e6","color":"w","type":"N"},{"sq":"h6","color":"b","type":"P"},{"sq":"f2","color":"w","type":"B"},{"sq":"h1","color":"w","type":"K"}],"solution":[["e6","c7"]]},{"id":29,"difficulty":"medium","title":"雙城堡階梯（有隻迷路的馬）","hint":"對方那隻騎士離得很遠，幫不上忙，专心用兩支城堡。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"h7","color":"w","type":"R"},{"sq":"g5","color":"w","type":"R"},{"sq":"e4","color":"b","type":"N"},{"sq":"h3","color":"w","type":"K"}],"solution":[["g5","g8"]]},{"id":30,"difficulty":"medium","title":"車王聯手（多一個兵）","hint":"那個多出來的兵不影響任何逃跑格子，思路跟基本款一樣。","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"g6","color":"w","type":"K"},{"sq":"h6","color":"b","type":"P"},{"sq":"a5","color":"w","type":"R"}],"solution":[["a5","a8"]]},{"id":31,"difficulty":"medium","title":"底線將死（有陷阱棋子）","hint":"棋盤上有兩支城堡，只有一支能完成將死，仔細看清楚！","turn":"b","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"a5","color":"b","type":"R"},{"sq":"c4","color":"w","type":"N"},{"sq":"e4","color":"b","type":"R"},{"sq":"g2","color":"w","type":"P"},{"sq":"h2","color":"w","type":"P"},{"sq":"h1","color":"w","type":"K"}],"solution":[["e4","e1"]]},{"id":32,"difficulty":"medium","title":"边線將死（別被騎士騙了）","hint":"棋盤上的騎士只是障眼法，真正的答案還是靠王后。","turn":"w","pieces":[{"sq":"h8","color":"w","type":"Q"},{"sq":"c6","color":"w","type":"N"},{"sq":"g3","color":"w","type":"K"},{"sq":"b2","color":"b","type":"P"},{"sq":"h1","color":"b","type":"K"}],"solution":[["h8","h2"]]},{"id":33,"difficulty":"medium","title":"悶殺（多了幾個旁觀者）","hint":"主教離事發地點很遠，真正能將死的還是那隻騎士。","turn":"w","pieces":[{"sq":"a8","color":"w","type":"K"},{"sq":"c7","color":"w","type":"B"},{"sq":"a3","color":"b","type":"P"},{"sq":"d3","color":"w","type":"N"},{"sq":"g2","color":"b","type":"P"},{"sq":"h2","color":"b","type":"P"},{"sq":"g1","color":"b","type":"R"},{"sq":"h1","color":"b","type":"K"}],"solution":[["d3","f2"]]},{"id":34,"difficulty":"medium","title":"雙城堡階梯（有隻迷路的馬）","hint":"對方那隻騎士離得很遠，幫不上忙，专心用兩支城堡。","turn":"w","pieces":[{"sq":"a6","color":"w","type":"K"},{"sq":"d5","color":"b","type":"N"},{"sq":"b4","color":"w","type":"R"},{"sq":"a2","color":"w","type":"R"},{"sq":"h1","color":"b","type":"K"}],"solution":[["b4","b1"]]},{"id":35,"difficulty":"medium","title":"車王聯手（多一個兵）","hint":"那個多出來的兵不影響任何逃跑格子，思路跟基本款一樣。","turn":"w","pieces":[{"sq":"h4","color":"w","type":"R"},{"sq":"a3","color":"b","type":"P"},{"sq":"b3","color":"w","type":"K"},{"sq":"a1","color":"b","type":"K"}],"solution":[["h4","h1"]]},{"id":36,"difficulty":"medium","title":"底線將死（有陷阱棋子）","hint":"棋盤上有兩支城堡，只有一支能完成將死，仔細看清楚！","turn":"b","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"h5","color":"b","type":"R"},{"sq":"d4","color":"b","type":"R"},{"sq":"f4","color":"w","type":"N"},{"sq":"a2","color":"w","type":"P"},{"sq":"b2","color":"w","type":"P"},{"sq":"a1","color":"w","type":"K"}],"solution":[["d4","d1"]]},{"id":37,"difficulty":"medium","title":"边線將死（別被騎士騙了）","hint":"棋盤上的騎士只是障眼法，真正的答案還是靠王后。","turn":"w","pieces":[{"sq":"a8","color":"w","type":"Q"},{"sq":"f6","color":"w","type":"N"},{"sq":"b3","color":"w","type":"K"},{"sq":"g2","color":"b","type":"P"},{"sq":"a1","color":"b","type":"K"}],"solution":[["a8","a2"]]},{"id":38,"difficulty":"medium","title":"悶殺（多了幾個旁觀者）","hint":"主教離事發地點很遠，真正能將死的還是那隻騎士。","turn":"w","pieces":[{"sq":"h8","color":"w","type":"K"},{"sq":"f7","color":"w","type":"B"},{"sq":"e3","color":"w","type":"N"},{"sq":"h3","color":"b","type":"P"},{"sq":"a2","color":"b","type":"P"},{"sq":"b2","color":"b","type":"P"},{"sq":"a1","color":"b","type":"K"},{"sq":"b1","color":"b","type":"R"}],"solution":[["e3","c2"]]},{"id":39,"difficulty":"medium","title":"雙城堡階梯（有隻迷路的馬）","hint":"對方那隻騎士離得很遠，幫不上忙，专心用兩支城堡。","turn":"w","pieces":[{"sq":"h6","color":"w","type":"K"},{"sq":"e5","color":"b","type":"N"},{"sq":"g4","color":"w","type":"R"},{"sq":"h2","color":"w","type":"R"},{"sq":"a1","color":"b","type":"K"}],"solution":[["g4","g1"]]},{"id":40,"difficulty":"medium","title":"車王聯手（多一個兵）","hint":"那個多出來的兵不影響任何逃跑格子，思路跟基本款一樣。","turn":"w","pieces":[{"sq":"a4","color":"w","type":"R"},{"sq":"g3","color":"w","type":"K"},{"sq":"h3","color":"b","type":"P"},{"sq":"h1","color":"b","type":"K"}],"solution":[["a4","a1"]]},{"id":41,"difficulty":"hard","title":"兩步將死：騎士先將軍","hint":"先用騎士將軍，逼國王走到唯一能去的格子，再用城堡收尾。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"a7","color":"b","type":"P"},{"sq":"b7","color":"b","type":"P"},{"sq":"a6","color":"w","type":"N"},{"sq":"d6","color":"w","type":"K"},{"sq":"h5","color":"w","type":"R"}],"solution":[["a6","c7"],["a8","b8"],["h5","h8"]]},{"id":42,"difficulty":"hard","title":"兩步將死：騎士開路，王后收官","hint":"騎士將軍後國王只能走一步，接著讓王后完成將死。","turn":"w","pieces":[{"sq":"b6","color":"w","type":"Q"},{"sq":"e3","color":"w","type":"K"},{"sq":"g2","color":"b","type":"P"},{"sq":"h2","color":"b","type":"P"},{"sq":"d1","color":"w","type":"N"},{"sq":"h1","color":"b","type":"K"}],"solution":[["d1","f2"],["h1","g1"],["b6","b1"]]},{"id":43,"difficulty":"hard","title":"兩步將死：騎士先將軍","hint":"先用騎士將軍，逼國王走到唯一能去的格子，再用城堡收尾。","turn":"w","pieces":[{"sq":"h8","color":"b","type":"K"},{"sq":"g7","color":"b","type":"P"},{"sq":"h7","color":"b","type":"P"},{"sq":"e6","color":"w","type":"K"},{"sq":"h6","color":"w","type":"N"},{"sq":"a5","color":"w","type":"R"}],"solution":[["h6","f7"],["h8","g8"],["a5","a8"]]},{"id":44,"difficulty":"hard","title":"兩步將死：騎士開路，王后收官","hint":"騎士將軍後國王只能走一步，接著讓王后完成將死。","turn":"w","pieces":[{"sq":"g6","color":"w","type":"Q"},{"sq":"d3","color":"w","type":"K"},{"sq":"a2","color":"b","type":"P"},{"sq":"b2","color":"b","type":"P"},{"sq":"a1","color":"b","type":"K"},{"sq":"e1","color":"w","type":"N"}],"solution":[["e1","c2"],["a1","b1"],["g6","g1"]]},{"id":45,"difficulty":"hard","title":"兩步將死：騎士先將軍","hint":"先用騎士將軍，逼國王走到唯一能去的格子，再用城堡收尾。","turn":"w","pieces":[{"sq":"h4","color":"w","type":"R"},{"sq":"a3","color":"w","type":"N"},{"sq":"d3","color":"w","type":"K"},{"sq":"a2","color":"b","type":"P"},{"sq":"b2","color":"b","type":"P"},{"sq":"a1","color":"b","type":"K"}],"solution":[["a3","c2"],["a1","b1"],["h4","h1"]]},{"id":46,"difficulty":"hard","title":"兩步將死：騎士開路，王后收官","hint":"騎士將軍後國王只能走一步，接著讓王后完成將死。","turn":"w","pieces":[{"sq":"d8","color":"w","type":"N"},{"sq":"h8","color":"b","type":"K"},{"sq":"g7","color":"b","type":"P"},{"sq":"h7","color":"b","type":"P"},{"sq":"e6","color":"w","type":"K"},{"sq":"b3","color":"w","type":"Q"}],"solution":[["d8","f7"],["h8","g8"],["b3","b8"]]},{"id":47,"difficulty":"hard","title":"兩步將死：騎士先將軍","hint":"先用騎士將軍，逼國王走到唯一能去的格子，再用城堡收尾。","turn":"w","pieces":[{"sq":"a4","color":"w","type":"R"},{"sq":"e3","color":"w","type":"K"},{"sq":"h3","color":"w","type":"N"},{"sq":"g2","color":"b","type":"P"},{"sq":"h2","color":"b","type":"P"},{"sq":"h1","color":"b","type":"K"}],"solution":[["h3","f2"],["h1","g1"],["a4","a1"]]},{"id":48,"difficulty":"hard","title":"兩步將死：騎士開路，王后收官","hint":"騎士將軍後國王只能走一步，接著讓王后完成將死。","turn":"w","pieces":[{"sq":"a8","color":"b","type":"K"},{"sq":"e8","color":"w","type":"N"},{"sq":"a7","color":"b","type":"P"},{"sq":"b7","color":"b","type":"P"},{"sq":"d6","color":"w","type":"K"},{"sq":"g3","color":"w","type":"Q"}],"solution":[["e8","c7"],["a8","b8"],["g3","g8"]]},{"id":49,"difficulty":"hard","title":"兩步將死：騎士先將軍","hint":"先用騎士將軍，逼國王走到唯一能去的格子，再用城堡收尾。","turn":"b","pieces":[{"sq":"a8","color":"w","type":"K"},{"sq":"a7","color":"w","type":"P"},{"sq":"b7","color":"w","type":"P"},{"sq":"a6","color":"b","type":"N"},{"sq":"d6","color":"b","type":"K"},{"sq":"h5","color":"b","type":"R"}],"solution":[["a6","c7"],["a8","b8"],["h5","h8"]]},{"id":50,"difficulty":"hard","title":"兩步將死：騎士開路，王后收官","hint":"騎士將軍後國王只能走一步，接著讓王后完成將死。","turn":"b","pieces":[{"sq":"b6","color":"b","type":"Q"},{"sq":"e3","color":"b","type":"K"},{"sq":"g2","color":"w","type":"P"},{"sq":"h2","color":"w","type":"P"},{"sq":"d1","color":"b","type":"N"},{"sq":"h1","color":"w","type":"K"}],"solution":[["d1","f2"],["h1","g1"],["b6","b1"]]}];
+
+
+// piece 可以是 {type,color} 或 {type,color,promoted:true}
+function spriteFor(piece){
+  if(piece.promoted) return PROMO_B64[piece.color];
+  return DEX_B64[piece.color+piece.type];
+}
+function nameFor(piece){
+  if(piece.promoted) return `${PROMO_NAMES[piece.color]}（原${NAMES[piece.color+'P']}進化）`;
+  if(piece.promotedFrom==='P') return `${NAMES[piece.color+piece.type]}（原${NAMES[piece.color+'P']}升變）`;
+  return NAMES[piece.color+piece.type];
+}
+// 相容舊呼叫方式 sprite(color, type)
+function sprite(color, type){ return spriteFor({color, type}); }
+
+/* build legend */
+(function buildLegend(){
+  const grid = document.getElementById('legend-grid');
+  ['K','Q','R','B','N','P'].forEach(t=>{
+    const div = document.createElement('div');
+    div.className='pair';
+    div.innerHTML = `<img src="${sprite('w',t)}"><span>${NAMES['w'+t]}</span><span class="vs">vs</span><img src="${sprite('b',t)}"><span>${NAMES['b'+t]}</span><span class="vs">— ${ROLE_LABEL[t]}</span>`;
+    grid.appendChild(div);
+  });
+})();
+
+/* ---------- Chess engine ---------- */
+let board, turn, selected, legalTargets, lastMove, gameOver, castleRights, enPassantTarget;
+
+function initBoard(){
+  const back = ['R','N','B','Q','K','B','N','R'];
+  board = Array.from({length:8}, ()=> Array(8).fill(null));
+  for(let c=0;c<8;c++){
+    board[0][c] = {type:back[c], color:'b'};
+    board[1][c] = {type:'P', color:'b'};
+    board[6][c] = {type:'P', color:'w'};
+    board[7][c] = {type:back[c], color:'w'};
+  }
+  turn = 'w';
+  selected = null;
+  legalTargets = [];
+  lastMove = null;
+  gameOver = false;
+  castleRights = { wK:true, wQ:true, bK:true, bQ:true };
+  enPassantTarget = null;
+}
+
+function cloneBoard(b){ return b.map(row => row.map(cell => cell ? {...cell} : null)); }
+function inBounds(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
+
+function pawnAttackSquares(r,c,color){
+  const dir = color==='w' ? -1 : 1;
+  return [[r+dir,c-1],[r+dir,c+1]].filter(([rr,cc])=>inBounds(rr,cc));
+}
+
+const SLIDE = {
+  B: [[-1,-1],[-1,1],[1,-1],[1,1]],
+  R: [[-1,0],[1,0],[0,-1],[0,1]],
+  Q: [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]
+};
+const KNIGHT_OFF = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+const KING_OFF = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+
+// `extra` (optional) = { enPassantTarget: [r,c]|null, castleRights: {...} }
+// Omitting it preserves the original behaviour exactly (no castling, no en passant) —
+// this keeps puzzle mode's calls (which never pass `extra`) unaffected.
+function pseudoMoves(b, r, c, extra){
+  const ep = extra && extra.enPassantTarget;
+  const piece = b[r][c];
+  if(!piece) return [];
+  const {type, color} = piece;
+  const moves = [];
+
+  if(type==='P'){
+    const dir = color==='w' ? -1 : 1;
+    const startRow = color==='w' ? 6 : 1;
+    if(inBounds(r+dir,c) && !b[r+dir][c]){
+      moves.push([r+dir,c]);
+      if(r===startRow && !b[r+2*dir][c]) moves.push([r+2*dir,c]);
+    }
+    pawnAttackSquares(r,c,color).forEach(([rr,cc])=>{
+      if(b[rr][cc] && b[rr][cc].color!==color) moves.push([rr,cc]);
+      else if(ep && ep[0]===rr && ep[1]===cc) moves.push([rr,cc]); // 吃過路兵
+    });
+  } else if(type==='N'){
+    KNIGHT_OFF.forEach(([dr,dc])=>{
+      const rr=r+dr, cc=c+dc;
+      if(inBounds(rr,cc) && (!b[rr][cc] || b[rr][cc].color!==color)) moves.push([rr,cc]);
+    });
+  } else if(type==='K'){
+    KING_OFF.forEach(([dr,dc])=>{
+      const rr=r+dr, cc=c+dc;
+      if(inBounds(rr,cc) && (!b[rr][cc] || b[rr][cc].color!==color)) moves.push([rr,cc]);
+    });
+  } else {
+    const dirs = SLIDE[type];
+    dirs.forEach(([dr,dc])=>{
+      let rr=r+dr, cc=c+dc;
+      while(inBounds(rr,cc)){
+        if(!b[rr][cc]){ moves.push([rr,cc]); }
+        else { if(b[rr][cc].color!==color) moves.push([rr,cc]); break; }
+        rr+=dr; cc+=dc;
+      }
+    });
+  }
+  return moves;
+}
+
+// Castling is generated separately from pseudoMoves (not folded into it), because
+// isSquareAttacked() reuses pseudoMoves() to compute what a king attacks — if castling
+// destinations leaked in there, kings would wrongly "attack" g/c-file squares two away.
+function getCastlingMoves(b, r, c, color, castleRights){
+  const results = [];
+  if(!castleRights) return results;
+  const homeRow = color==='w' ? 7 : 0;
+  if(r!==homeRow || c!==4) return results; // king must be on its home square
+  const oppColor = color==='w' ? 'b' : 'w';
+  if(isSquareAttacked(b, r, c, oppColor)) return results; // can't castle out of check
+  const kRight = color==='w' ? castleRights.wK : castleRights.bK;
+  const qRight = color==='w' ? castleRights.wQ : castleRights.bQ;
+  if(kRight && !b[homeRow][5] && !b[homeRow][6] &&
+     b[homeRow][7] && b[homeRow][7].type==='R' && b[homeRow][7].color===color &&
+     !isSquareAttacked(b,homeRow,5,oppColor) && !isSquareAttacked(b,homeRow,6,oppColor)){
+    results.push([homeRow,6]);
+  }
+  if(qRight && !b[homeRow][3] && !b[homeRow][2] && !b[homeRow][1] &&
+     b[homeRow][0] && b[homeRow][0].type==='R' && b[homeRow][0].color===color &&
+     !isSquareAttacked(b,homeRow,3,oppColor) && !isSquareAttacked(b,homeRow,2,oppColor)){
+    results.push([homeRow,2]);
+  }
+  return results;
+}
+
+function isSquareAttacked(b, r, c, byColor){
+  for(let rr=0; rr<8; rr++){
+    for(let cc=0; cc<8; cc++){
+      const p = b[rr][cc];
+      if(p && p.color===byColor){
+        if(p.type==='P'){
+          if(pawnAttackSquares(rr,cc,byColor).some(([tr,tc])=> tr===r && tc===c)) return true;
+        } else {
+          if(pseudoMoves(b, rr, cc).some(([tr,tc])=> tr===r && tc===c)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function findKing(b, color){
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    if(b[r][c] && b[r][c].type==='K' && b[r][c].color===color) return [r,c];
+  }
+  return null;
+}
+
+// promotionChoice (optional) is 'Q'|'R'|'B'|'N'. Omitted => auto-promotes to Queen
+// (this is what puzzle mode relies on for its "evolution" flavor).
+function makeMove(b, from, to, promotionChoice){
+  const nb = cloneBoard(b);
+  const piece = nb[from[0]][from[1]];
+
+  // 吃過路兵: a pawn moving diagonally onto an EMPTY square must be en passant —
+  // the captured pawn sits beside the mover's start square, not on the destination.
+  if(piece.type==='P' && from[1]!==to[1] && !nb[to[0]][to[1]]){
+    nb[from[0]][to[1]] = null;
+  }
+
+  nb[to[0]][to[1]] = piece;
+  nb[from[0]][from[1]] = null;
+
+  // 王車易位: king jumping 2 files also relocates the rook to the far side.
+  if(piece.type==='K' && Math.abs(to[1]-from[1])===2){
+    const row = from[0];
+    if(to[1] > from[1]){ nb[row][5] = nb[row][7]; nb[row][7] = null; }
+    else { nb[row][3] = nb[row][0]; nb[row][0] = null; }
+  }
+
+  // 兵升變 / 進化
+  if(piece.type==='P' && (to[0]===0 || to[0]===7)){
+    if(promotionChoice){
+      piece.type = promotionChoice;
+      piece.promoted = (promotionChoice==='Q');
+      if(promotionChoice!=='Q') piece.promotedFrom = 'P';
+    } else {
+      piece.type = 'Q';
+      piece.promoted = true;
+    }
+  }
+  return nb;
+}
+
+function nextCastleRights(rights, board, from, to){
+  const nr = { ...rights };
+  const piece = board[from[0]][from[1]];
+  if(piece){
+    if(piece.type==='K'){
+      if(piece.color==='w'){ nr.wK=false; nr.wQ=false; } else { nr.bK=false; nr.bQ=false; }
+    }
+    if(piece.type==='R'){
+      if(from[0]===7 && from[1]===0) nr.wQ=false;
+      if(from[0]===7 && from[1]===7) nr.wK=false;
+      if(from[0]===0 && from[1]===0) nr.bQ=false;
+      if(from[0]===0 && from[1]===7) nr.bK=false;
+    }
+  }
+  if(to[0]===7 && to[1]===0) nr.wQ=false; // rook captured on its home square
+  if(to[0]===7 && to[1]===7) nr.wK=false;
+  if(to[0]===0 && to[1]===0) nr.bQ=false;
+  if(to[0]===0 && to[1]===7) nr.bK=false;
+  return nr;
+}
+function nextEnPassantTarget(board, from, to){
+  const piece = board[from[0]][from[1]];
+  if(piece && piece.type==='P' && Math.abs(to[0]-from[0])===2){
+    return [(to[0]+from[0])/2, from[1]];
+  }
+  return null;
+}
+
+function legalMovesFor(b, r, c, extra){
+  const piece = b[r][c];
+  if(!piece) return [];
+  const candidates = pseudoMoves(b, r, c, extra).slice();
+  if(piece.type==='K' && extra && extra.castleRights){
+    getCastlingMoves(b, r, c, piece.color, extra.castleRights).forEach(sq=>candidates.push(sq));
+  }
+  return candidates.filter(([tr,tc])=>{
+    const nb = makeMove(b, [r,c], [tr,tc]);
+    const kingPos = findKing(nb, piece.color);
+    if(!kingPos) return false;
+    return !isSquareAttacked(nb, kingPos[0], kingPos[1], piece.color==='w'?'b':'w');
+  });
+}
+
+function anyLegalMoves(b, color, extra){
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    if(b[r][c] && b[r][c].color===color){
+      if(legalMovesFor(b, r, c, extra).length>0) return true;
+    }
+  }
+  return false;
+}
+function isCheckmate(b, color, extra){
+  const kp = findKing(b, color);
+  if(!kp) return false;
+  return isSquareAttacked(b, kp[0], kp[1], color==='w'?'b':'w') && !anyLegalMoves(b, color, extra);
+}
+function algebraToSq(a){ return [8 - parseInt(a[1],10), a.charCodeAt(0)-97]; }
+
+/* ---------- Rendering ---------- */
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const capturedWhiteEl = document.getElementById('captured-white');
+const capturedBlackEl = document.getElementById('captured-black');
+let capturedWhite = [], capturedBlack = [];
+
+function render(){
+  boardEl.innerHTML = '';
+  const kingInCheckColor = turn;
+  const kingPos = findKing(board, kingInCheckColor);
+  const inCheck = kingPos && isSquareAttacked(board, kingPos[0], kingPos[1], kingInCheckColor==='w'?'b':'w');
+
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const sq = document.createElement('div');
+      sq.className = 'square ' + (((r+c)%2===0) ? 'light':'dark');
+      const isLastMoveSq = lastMove && (
+        (lastMove.from[0]===r && lastMove.from[1]===c) || (lastMove.to[0]===r && lastMove.to[1]===c) ||
+        (lastMove.rookFrom && lastMove.rookFrom[0]===r && lastMove.rookFrom[1]===c) ||
+        (lastMove.rookTo && lastMove.rookTo[0]===r && lastMove.rookTo[1]===c)
+      );
+      if(isLastMoveSq) sq.classList.add('last-move');
+      if(selected && selected[0]===r && selected[1]===c) sq.classList.add('selected');
+      if(inCheck && kingPos[0]===r && kingPos[1]===c) sq.classList.add('king-check');
+
+      const piece = board[r][c];
+      if(piece){
+        const img = document.createElement('img');
+        img.className = 'piece';
+        img.src = spriteFor(piece);
+        img.title = `${nameFor(piece)} — ${ROLE_LABEL[piece.type]}`;
+        sq.appendChild(img);
+
+        const badge = document.createElement('div');
+        badge.className = 'piece-badge ' + (piece.color==='w' ? 'badge-w' : 'badge-b');
+        badge.textContent = symbolFor(piece);
+        badge.title = ROLE_LABEL[piece.type];
+        sq.appendChild(badge);
+      }
+
+      if(legalTargets.some(([tr,tc])=> tr===r && tc===c)){
+        const marker = document.createElement('div');
+        marker.className = piece ? 'ring' : 'dot';
+        sq.appendChild(marker);
+      }
+
+      sq.addEventListener('click', ()=> onSquareClick(r,c));
+      boardEl.appendChild(sq);
+    }
+  }
+
+  renderCaptured();
+  renderStatus(inCheck);
+}
+
+function renderCaptured(){
+  const chip = (p) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'cap-chip';
+    const img = document.createElement('img');
+    img.src = spriteFor(p);
+    img.title = nameFor(p);
+    const badge = document.createElement('span');
+    badge.className = 'cap-badge ' + (p.color==='w' ? 'badge-w' : 'badge-b');
+    badge.textContent = symbolFor(p);
+    wrap.appendChild(img);
+    wrap.appendChild(badge);
+    return wrap;
+  };
+  capturedWhiteEl.innerHTML = '';
+  capturedWhite.forEach(p => capturedWhiteEl.appendChild(chip(p)));
+  capturedBlackEl.innerHTML = '';
+  capturedBlack.forEach(p => capturedBlackEl.appendChild(chip(p)));
+}
+
+function currentExtra(){ return { enPassantTarget, castleRights }; }
+
+function renderStatus(inCheck){
+  statusEl.classList.remove('check');
+  if(gameOver) return;
+  const sideName = turn==='w' ? '白方（阿爾宙斯陣營）' : '黑方（超夢陣營）';
+  if(!anyLegalMoves(board, turn, currentExtra())){
+    gameOver = true;
+    if(inCheck){
+      const winner = turn==='w' ? '黑方（超夢陣營）' : '白方（阿爾宙斯陣營）';
+      statusEl.textContent = `將死！${winner} 獲勝 🏆`;
+      statusEl.classList.add('check');
+    } else {
+      statusEl.textContent = `逼和，雙方平手 🤝`;
+    }
+    return;
+  }
+  if(inCheck){
+    statusEl.textContent = `${sideName}被將軍！`;
+    statusEl.classList.add('check');
+  } else {
+    statusEl.textContent = `${sideName}回合`;
+  }
+}
+
+/* ---------- Interaction ---------- */
+function onSquareClick(r,c){
+  if(gameOver) return;
+  const piece = board[r][c];
+
+  if(selected){
+    const isTarget = legalTargets.some(([tr,tc])=> tr===r && tc===c);
+    if(isTarget){
+      const movingPiece = board[selected[0]][selected[1]];
+      const isPromotion = movingPiece.type==='P' && (r===0 || r===7);
+      if(isPromotion){
+        showPromotionChoice(movingPiece.color, (chosenType)=>{
+          commitMove(selected, [r,c], chosenType);
+        });
+      } else {
+        commitMove(selected, [r,c], null);
+      }
+      return;
+    }
+    // clicking another own piece re-selects
+    if(piece && piece.color===turn){
+      selected = [r,c];
+      legalTargets = legalMovesFor(board, r, c, currentExtra());
+      render();
+      return;
+    }
+    // clicking elsewhere deselects
+    selected = null;
+    legalTargets = [];
+    render();
+    return;
+  }
+
+  if(piece && piece.color===turn){
+    selected = [r,c];
+    legalTargets = legalMovesFor(board, r, c, currentExtra());
+    render();
+  }
+}
+
+function commitMove(from, to, promotionChoice){
+  const movingPiece = board[from[0]][from[1]];
+  let captured = board[to[0]][to[1]];
+  // 吃過路兵: diagonal pawn move onto an empty square captures the pawn beside it
+  if(!captured && movingPiece.type==='P' && from[1]!==to[1]){
+    captured = board[from[0]][to[1]];
+  }
+  const newCastleRights = nextCastleRights(castleRights, board, from, to);
+  const newEnPassant = nextEnPassantTarget(board, from, to);
+  const isCastle = movingPiece.type==='K' && Math.abs(to[1]-from[1])===2;
+
+  board = makeMove(board, from, to, promotionChoice);
+  castleRights = newCastleRights;
+  enPassantTarget = newEnPassant;
+
+  if(captured){
+    if(captured.color==='w') capturedWhite.push(captured);
+    else capturedBlack.push(captured);
+  }
+  lastMove = { from, to };
+  if(isCastle){
+    const row = from[0];
+    lastMove.rookFrom = to[1] > from[1] ? [row,7] : [row,0];
+    lastMove.rookTo = to[1] > from[1] ? [row,5] : [row,3];
+  }
+  turn = turn==='w' ? 'b' : 'w';
+  selected = null;
+  legalTargets = [];
+  render();
+  maybeShowCheckAlert();
+}
+
+function maybeShowCheckAlert(){
+  if(gameOver) return; // checkmate/stalemate already shows its own big status message
+  const kp = findKing(board, turn);
+  if(!kp) return;
+  const inChk = isSquareAttacked(board, kp[0], kp[1], turn==='w'?'b':'w');
+  if(inChk) showCheckAlert(turn, board[kp[0]][kp[1]]);
+}
+
+let checkAlertTimer1, checkAlertTimer2;
+function showCheckAlert(color, kingPiece){
+  const overlay = document.getElementById('check-alert-overlay');
+  const box = document.getElementById('check-alert-box');
+  const img = document.getElementById('check-alert-img');
+  const text = document.getElementById('check-alert-text');
+  const sideName = color==='w' ? '白方（阿爾宙斯陣營）' : '黑方（超夢陣營）';
+  img.src = spriteFor(kingPiece);
+  text.textContent = `⚠️ ${sideName}被將軍了！`;
+  box.classList.remove('fade-out');
+  overlay.style.display = 'flex';
+  clearTimeout(checkAlertTimer1);
+  clearTimeout(checkAlertTimer2);
+  checkAlertTimer1 = setTimeout(()=>{ box.classList.add('fade-out'); }, 1600);
+  checkAlertTimer2 = setTimeout(()=>{ overlay.style.display = 'none'; }, 2000);
+}
+document.getElementById('check-alert-overlay').addEventListener('click', ()=>{
+  clearTimeout(checkAlertTimer1);
+  clearTimeout(checkAlertTimer2);
+  document.getElementById('check-alert-overlay').style.display = 'none';
+});
+
+
+document.getElementById('restart').addEventListener('click', ()=>{
+  capturedWhite = []; capturedBlack = [];
+  initBoard();
+  render();
+});
+
+/* ---------- Responsive board sizing ---------- */
+function resizeBoard(){
+  const stadiums = document.querySelectorAll('.stadium');
+  let stadium = null;
+  for(const s of stadiums){ if(s.offsetParent !== null){ stadium = s; break; } }
+  if(!stadium) stadium = stadiums[0];
+  if(!stadium) return;
+  const cs = getComputedStyle(stadium);
+  const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const innerWidth = stadium.clientWidth - padX;
+
+  let coordW = 20;
+  let sq = Math.floor((innerWidth - 2*coordW) / 8);
+  coordW = Math.max(14, Math.min(24, sq * 0.32));
+  sq = Math.floor((innerWidth - 2*coordW) / 8);
+
+  // also make sure the board doesn't force excessive vertical scrolling on short screens
+  const vh = window.innerHeight;
+  const verticalReserve = 300; // rough height of title/status/controls/legend/margins
+  const sqByHeight = Math.floor((vh - verticalReserve) / 8);
+  if(sqByHeight > 20) sq = Math.min(sq, sqByHeight);
+
+  sq = Math.max(28, Math.min(sq, 72));
+  coordW = Math.max(14, Math.round(sq * 0.3));
+
+  document.documentElement.style.setProperty('--sq', sq + 'px');
+  document.documentElement.style.setProperty('--coord-w', coordW + 'px');
+}
+
+let resizeTimer;
+function scheduleResize(){
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(resizeBoard, 80);
+}
+window.addEventListener('resize', scheduleResize);
+window.addEventListener('orientationchange', scheduleResize);
+
+/* ================= Puzzle Mode ================= */
+const solvedPuzzles = new Set(); // resets on page reload (no persistent storage in this offline file)
+let currentPuzzle = null;
+let pzBoard = null, pzTurn = null, pzSelected = null, pzLegalTargets = [], pzPly = 0, pzDone = false, pzLastMove = null;
+
+function puzzleBoardFromPieces(pieces){
+  const b = Array.from({length:8}, ()=>Array(8).fill(null));
+  pieces.forEach(p => {
+    const [r,c] = algebraToSq(p.sq);
+    b[r][c] = { type: p.type, color: p.color };
+  });
+  return b;
+}
+
+const DIFF_LABEL = { easy:'簡單', medium:'中等', hard:'困難' };
+const DIFF_SECTIONS = [
+  { key:'easy',   label:'⭐ 簡單（將死 1 步）' },
+  { key:'medium', label:'⭐⭐ 中等（將死 1 步，但有陷阱棋子）' },
+  { key:'hard',   label:'⭐⭐⭐ 困難（將死 2 步）' }
+];
+
+function renderPuzzleList(){
+  const container = document.getElementById('puzzle-sections');
+  container.innerHTML = '';
+  DIFF_SECTIONS.forEach(sec => {
+    const items = PUZZLES.filter(p => p.difficulty === sec.key);
+    const wrap = document.createElement('div');
+    wrap.className = 'puzzle-section';
+    const h = document.createElement('h3');
+    h.innerHTML = `<span class="diff-dot diff-${sec.key}"></span> ${sec.label}`;
+    wrap.appendChild(h);
+    const grid = document.createElement('div');
+    grid.className = 'puzzle-grid';
+    items.forEach(p => {
+      const tile = document.createElement('button');
+      tile.className = 'puzzle-tile' + (solvedPuzzles.has(p.id) ? ' solved' : '');
+      tile.textContent = p.id;
+      tile.title = p.title;
+      tile.addEventListener('click', ()=> openPuzzle(p.id));
+      grid.appendChild(tile);
+    });
+    wrap.appendChild(grid);
+    container.appendChild(wrap);
+  });
+}
+
+function openPuzzle(id){
+  currentPuzzle = PUZZLES.find(p => p.id === id);
+  if(!currentPuzzle) return;
+  pzBoard = puzzleBoardFromPieces(currentPuzzle.pieces);
+  pzTurn = currentPuzzle.turn;
+  pzSelected = null;
+  pzLegalTargets = [];
+  pzPly = 0;
+  pzDone = false;
+  pzLastMove = null;
+  document.getElementById('puzzle-list-view').style.display = 'none';
+  document.getElementById('puzzle-play-view').style.display = 'flex';
+  document.getElementById('puzzle-hint-box').style.display = 'none';
+  document.getElementById('puzzle-title').textContent = `第 ${currentPuzzle.id} 題 ・ ${DIFF_LABEL[currentPuzzle.difficulty]} ・ ${currentPuzzle.title}`;
+  resizeBoard();
+  renderPuzzle();
+}
+
+function renderPuzzle(){
+  const boardEl = document.getElementById('puzzle-board');
+  boardEl.innerHTML = '';
+  const kingColorToMove = pzTurn;
+  const kp = findKing(pzBoard, kingColorToMove);
+  const inChk = kp && isSquareAttacked(pzBoard, kp[0], kp[1], kingColorToMove==='w'?'b':'w');
+
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const sq = document.createElement('div');
+      sq.className = 'square ' + (((r+c)%2===0) ? 'light':'dark');
+      if(pzLastMove && ((pzLastMove.from[0]===r && pzLastMove.from[1]===c) || (pzLastMove.to[0]===r && pzLastMove.to[1]===c))){
+        sq.classList.add('last-move');
+      }
+      if(pzSelected && pzSelected[0]===r && pzSelected[1]===c) sq.classList.add('selected');
+      if(!pzDone && inChk && kp[0]===r && kp[1]===c) sq.classList.add('king-check');
+
+      const piece = pzBoard[r][c];
+      if(piece){
+        const img = document.createElement('img');
+        img.className = 'piece';
+        img.src = spriteFor(piece);
+        img.title = `${nameFor(piece)} — ${ROLE_LABEL[piece.type]}`;
+        sq.appendChild(img);
+        const badge = document.createElement('div');
+        badge.className = 'piece-badge ' + (piece.color==='w' ? 'badge-w' : 'badge-b');
+        badge.textContent = symbolFor(piece);
+        sq.appendChild(badge);
+      }
+      if(!pzDone && pzLegalTargets.some(([tr,tc])=> tr===r && tc===c)){
+        const marker = document.createElement('div');
+        marker.className = piece ? 'ring' : 'dot';
+        sq.appendChild(marker);
+      }
+      sq.addEventListener('click', ()=> onPuzzleClick(r,c));
+      boardEl.appendChild(sq);
+    }
+  }
+
+  const statusEl = document.getElementById('puzzle-status');
+  statusEl.classList.remove('check');
+  if(pzDone){
+    statusEl.textContent = '🎉 將死成功！太棒了！';
+  } else {
+    const sideName = pzTurn==='w' ? '白方' : '黑方';
+    statusEl.textContent = inChk ? `${sideName}被將軍中…找出致命一擊！` : `輪到${sideName}走 — 找出將死的走法！`;
+    if(inChk) statusEl.classList.add('check');
+  }
+}
+
+function onPuzzleClick(r,c){
+  if(pzDone) return;
+  const piece = pzBoard[r][c];
+
+  if(pzSelected){
+    const isTarget = pzLegalTargets.some(([tr,tc])=> tr===r && tc===c);
+    if(isTarget){
+      attemptPuzzleMove(pzSelected, [r,c]);
+      return;
+    }
+    if(piece && piece.color===pzTurn){
+      pzSelected = [r,c];
+      pzLegalTargets = legalMovesFor(pzBoard, r, c);
+      renderPuzzle();
+      return;
+    }
+    pzSelected = null; pzLegalTargets = [];
+    renderPuzzle();
+    return;
+  }
+  if(piece && piece.color===pzTurn){
+    pzSelected = [r,c];
+    pzLegalTargets = legalMovesFor(pzBoard, r, c);
+    renderPuzzle();
+  }
+}
+
+function attemptPuzzleMove(from, to){
+  const solution = currentPuzzle.solution;
+  const isLastPly = (pzPly === solution.length - 1);
+  const nb = makeMove(pzBoard, from, to);
+  const defColor = pzTurn==='w' ? 'b' : 'w';
+
+  if(isLastPly){
+    // final move: accept ANY move that actually delivers checkmate (allows alternate correct solutions)
+    if(isCheckmate(nb, defColor)){
+      pzBoard = nb;
+      pzLastMove = {from, to};
+      pzSelected = null; pzLegalTargets = [];
+      pzDone = true;
+      solvedPuzzles.add(currentPuzzle.id);
+      renderPuzzle();
+    } else {
+      flashWrongMove();
+    }
+    return;
+  }
+
+  // intermediate ply: must match the scripted move exactly (only way we can verify the forced-mate line)
+  const [expFromA, expToA] = solution[pzPly];
+  const [efr, efc] = algebraToSq(expFromA);
+  const [etr, etc] = algebraToSq(expToA);
+  if(from[0]===efr && from[1]===efc && to[0]===etr && to[1]===etc){
+    pzBoard = nb;
+    pzLastMove = {from, to};
+    pzSelected = null; pzLegalTargets = [];
+    pzTurn = defColor;
+    pzPly++;
+    renderPuzzle();
+    // auto-play the forced defender reply after a short pause
+    setTimeout(()=>{
+      const [dFromA, dToA] = solution[pzPly];
+      const dFrom = algebraToSq(dFromA), dTo = algebraToSq(dToA);
+      pzBoard = makeMove(pzBoard, dFrom, dTo);
+      pzLastMove = {from: dFrom, to: dTo};
+      pzTurn = pzTurn==='w' ? 'b' : 'w';
+      pzPly++;
+      renderPuzzle();
+    }, 550);
+  } else {
+    flashWrongMove();
+  }
+}
+
+function flashWrongMove(){
+  pzSelected = null; pzLegalTargets = [];
+  renderPuzzle(); // redraw board first (clears highlights, resets status text)
+  const statusEl = document.getElementById('puzzle-status');
+  statusEl.textContent = '這不是最佳解法喔，再試試看！🤔';
+  statusEl.classList.add('check');
+  setTimeout(()=>{ if(!pzDone) renderPuzzle(); }, 900);
+}
+
+document.getElementById('puzzle-hint').addEventListener('click', ()=>{
+  const box = document.getElementById('puzzle-hint-box');
+  box.textContent = '💡 ' + currentPuzzle.hint;
+  box.style.display = 'block';
+});
+
+document.getElementById('puzzle-answer').addEventListener('click', ()=>{
+  if(!currentPuzzle) return;
+  // replay the puzzle from scratch, auto-playing the full scripted solution
+  pzBoard = puzzleBoardFromPieces(currentPuzzle.pieces);
+  pzTurn = currentPuzzle.turn;
+  pzSelected = null; pzLegalTargets = []; pzPly = 0; pzDone = false; pzLastMove = null;
+  renderPuzzle();
+  const solution = currentPuzzle.solution;
+  let i = 0;
+  function step(){
+    if(i >= solution.length) return;
+    const [fA,tA] = solution[i];
+    const from = algebraToSq(fA), to = algebraToSq(tA);
+    pzBoard = makeMove(pzBoard, from, to);
+    pzLastMove = {from, to};
+    pzTurn = pzTurn==='w' ? 'b' : 'w';
+    i++;
+    if(i === solution.length){
+      pzDone = true;
+      solvedPuzzles.add(currentPuzzle.id);
+    }
+    renderPuzzle();
+    if(i < solution.length) setTimeout(step, 700);
+  }
+  setTimeout(step, 400);
+});
+
+document.getElementById('puzzle-retry').addEventListener('click', ()=>{
+  if(currentPuzzle) openPuzzle(currentPuzzle.id);
+});
+
+document.getElementById('puzzle-back').addEventListener('click', ()=>{
+  document.getElementById('puzzle-play-view').style.display = 'none';
+  document.getElementById('puzzle-list-view').style.display = 'block';
+  renderPuzzleList();
+});
+
+/* ---------- Mode switching ---------- */
+document.getElementById('tab-battle').addEventListener('click', ()=>{
+  document.getElementById('tab-battle').classList.add('active');
+  document.getElementById('tab-puzzle').classList.remove('active');
+  document.getElementById('battle-mode').style.display = 'flex';
+  document.getElementById('puzzle-mode').style.display = 'none';
+  resizeBoard();
+});
+document.getElementById('tab-puzzle').addEventListener('click', ()=>{
+  document.getElementById('tab-puzzle').classList.add('active');
+  document.getElementById('tab-battle').classList.remove('active');
+  document.getElementById('battle-mode').style.display = 'none';
+  document.getElementById('puzzle-mode').style.display = 'flex';
+  resizeBoard();
+});
+
+/* ---------- Rules modal ---------- */
+const rulesModal = document.getElementById('rules-modal');
+document.getElementById('tab-rules').addEventListener('click', ()=>{
+  rulesModal.style.display = 'flex';
+});
+document.getElementById('rules-close').addEventListener('click', ()=>{
+  rulesModal.style.display = 'none';
+});
+rulesModal.addEventListener('click', (e)=>{
+  if(e.target === rulesModal) rulesModal.style.display = 'none';
+});
+
+/* ---------- Promotion choice modal ---------- */
+const promoModal = document.getElementById('promo-modal');
+const promoOptionsEl = document.getElementById('promo-options');
+function showPromotionChoice(color, callback){
+  promoOptionsEl.innerHTML = '';
+  const choices = [
+    { type:'Q', promoted:true,  label: (color==='w' ? '雷丘' : '貓老大') + '（后）' },
+    { type:'R', promoted:false, label: NAMES[color+'R'] + '（城堡）' },
+    { type:'B', promoted:false, label: NAMES[color+'B'] + '（主教）' },
+    { type:'N', promoted:false, label: NAMES[color+'N'] + '（騎士）' }
+  ];
+  choices.forEach(ch=>{
+    const btn = document.createElement('button');
+    btn.className = 'promo-opt';
+    const img = document.createElement('img');
+    img.src = ch.promoted ? PROMO_B64[color] : DEX_B64[color+ch.type];
+    const span = document.createElement('span');
+    span.textContent = ch.label;
+    btn.appendChild(img);
+    btn.appendChild(span);
+    btn.addEventListener('click', ()=>{
+      promoModal.style.display = 'none';
+      callback(ch.type);
+    });
+    promoOptionsEl.appendChild(btn);
+  });
+  promoModal.style.display = 'flex';
+}
+
+/* ---------- Rules modal: piece movement diagrams ---------- */
+function slidingOffsets(dirs, radius){
+  const out = [];
+  dirs.forEach(([dr,dc])=>{
+    for(let i=1;i<=radius;i++) out.push([dr*i, dc*i]);
+  });
+  return out;
+}
+function offsetsFor(type){
+  if(type==='K') return KING_OFF;
+  if(type==='N') return KNIGHT_OFF;
+  if(type==='R') return slidingOffsets(SLIDE.R, 2);
+  if(type==='B') return slidingOffsets(SLIDE.B, 2);
+  if(type==='Q') return slidingOffsets(SLIDE.Q, 2);
+  return [];
+}
+function buildPieceDiagram(type, color){
+  const N = 5, cell = 30, size = N*cell, center = 2;
+  let s = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">`;
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    s += `<rect x="${c*cell}" y="${r*cell}" width="${cell}" height="${cell}" fill="${(r+c)%2===0?'#F5E6C8':'#2F6F4E'}"/>`;
+  }
+  offsetsFor(type).forEach(([dr,dc])=>{
+    const r = center+dr, c = center+dc;
+    if(r>=0 && r<N && c>=0 && c<N){
+      s += `<circle cx="${c*cell+cell/2}" cy="${r*cell+cell/2}" r="${cell*0.2}" fill="rgba(255,203,5,0.9)" stroke="#1B2B24" stroke-width="1.5"/>`;
+    }
+  });
+  s += `<image href="${DEX_B64[color+type]}" x="${center*cell+cell*0.1}" y="${center*cell+cell*0.1}" width="${cell*0.8}" height="${cell*0.8}"/>`;
+  s += `</svg>`;
+  return s;
+}
+function buildPawnDiagram(color){
+  const cols = 3, rows = 4, cell = 30;
+  const w = cols*cell, h = rows*cell;
+  // pawnRow = bottom row (row index 3); forward = row 2 (1 step), row 1 (2 steps, first move only)
+  const pawnRow = 3, midCol = 1;
+  let s = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">`;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    s += `<rect x="${c*cell}" y="${r*cell}" width="${cell}" height="${cell}" fill="${(r+c)%2===0?'#F5E6C8':'#2F6F4E'}"/>`;
+  }
+  // forward moves (green/gold dots)
+  [[2,midCol],[1,midCol]].forEach(([r,c])=>{
+    s += `<circle cx="${c*cell+cell/2}" cy="${r*cell+cell/2}" r="${cell*0.2}" fill="rgba(255,203,5,0.9)" stroke="#1B2B24" stroke-width="1.5"/>`;
+  });
+  // diagonal capture-only squares (red/orange with a small x)
+  [[2,midCol-1],[2,midCol+1]].forEach(([r,c])=>{
+    const cx = c*cell+cell/2, cy = r*cell+cell/2;
+    s += `<circle cx="${cx}" cy="${cy}" r="${cell*0.2}" fill="rgba(227,53,13,0.85)" stroke="#1B2B24" stroke-width="1.5"/>`;
+    s += `<text x="${cx}" y="${cy+4}" font-size="12" text-anchor="middle" fill="#FAF3E0">✕</text>`;
+  });
+  s += `<image href="${DEX_B64[color+'P']}" x="${midCol*cell+cell*0.1}" y="${pawnRow*cell+cell*0.1}" width="${cell*0.8}" height="${cell*0.8}"/>`;
+  s += `</svg>`;
+  return s;
+}
+function renderRuleDiagrams(){
+  document.querySelectorAll('.rp-diagram').forEach(el=>{
+    el.innerHTML = buildPieceDiagram(el.dataset.piece, el.dataset.color);
+  });
+  document.querySelectorAll('.rp-diagram-pawn').forEach(el=>{
+    el.innerHTML = buildPawnDiagram(el.dataset.color);
+  });
+  document.querySelectorAll('.rule-diagram-panel').forEach(el=>{
+    el.innerHTML = buildSpecialRuleDiagram(el.dataset.diagram);
+  });
+}
+
+/* ---------- Special-rule (castling / promotion / en passant) diagrams ---------- */
+function miniBoardSVG(cells, cols, rows, cellSize){
+  cellSize = cellSize || 26;
+  const w = cols*cellSize, h = rows*cellSize;
+  let s = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">`;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    s += `<rect x="${c*cellSize}" y="${r*cellSize}" width="${cellSize}" height="${cellSize}" fill="${(r+c)%2===0?'#F5E6C8':'#2F6F4E'}"/>`;
+  }
+  cells.forEach(cell=>{
+    const cx = cell.col*cellSize, cy = cell.row*cellSize;
+    if(cell.highlight){
+      s += `<rect x="${cx}" y="${cy}" width="${cellSize}" height="${cellSize}" fill="rgba(255,203,5,0.35)"/>`;
+    }
+    if(cell.removed){
+      s += `<text x="${cx+cellSize/2}" y="${cy+cellSize/2+5}" font-size="${cellSize*0.55}" text-anchor="middle" fill="rgba(227,53,13,0.9)">✕</text>`;
+    }
+    if(cell.type){
+      const href = cell.promoted ? PROMO_B64[cell.color] : DEX_B64[cell.color+cell.type];
+      const opacity = cell.ghost ? 0.32 : 1;
+      s += `<image href="${href}" x="${cx+cellSize*0.1}" y="${cy+cellSize*0.1}" width="${cellSize*0.8}" height="${cellSize*0.8}" opacity="${opacity}"/>`;
+    }
+  });
+  s += `</svg>`;
+  return s;
+}
+function figureHTML(svg, label){
+  return `<div class="diagram-figure">${svg}<span>${label}</span></div>`;
+}
+function buildSpecialRuleDiagram(kind){
+  if(kind==='castle'){
+    const before = miniBoardSVG([
+      { row:0, col:0, type:'K', color:'w' },
+      { row:0, col:3, type:'R', color:'w' }
+    ], 4, 1);
+    const after = miniBoardSVG([
+      { row:0, col:1, type:'R', color:'w' },
+      { row:0, col:2, type:'K', color:'w' }
+    ], 4, 1);
+    return `<div class="diagram-pair">${figureHTML(before,'之前 e1/h1')}<span class="diagram-arrow">➡</span>${figureHTML(after,'之後 g1/f1')}</div>`;
+  }
+  if(kind==='promotion'){
+    const before = miniBoardSVG([
+      { row:0, col:0, highlight:true },
+      { row:1, col:0, type:'P', color:'w' }
+    ], 1, 2);
+    const after = miniBoardSVG([
+      { row:0, col:0, type:'Q', color:'w', promoted:true },
+      { row:0, col:1, type:'R', color:'w' },
+      { row:0, col:2, type:'B', color:'w' },
+      { row:0, col:3, type:'N', color:'w' }
+    ], 4, 1);
+    return `<div class="diagram-pair">${figureHTML(before,'兵走到底線')}<span class="diagram-arrow">➡</span>${figureHTML(after,'自己選一個')}</div>`;
+  }
+  if(kind==='enpassant'){
+    const before = miniBoardSVG([
+      { row:0, col:0, type:'P', color:'b', ghost:true },
+      { row:2, col:0, type:'P', color:'b' },
+      { row:2, col:1, type:'P', color:'w' }
+    ], 2, 3, 26);
+    const after = miniBoardSVG([
+      { row:1, col:0, type:'P', color:'w' },
+      { row:2, col:0, removed:true }
+    ], 2, 3, 26);
+    return `<div class="diagram-pair">${figureHTML(before,'黑兵走兩格')}<span class="diagram-arrow">➡</span>${figureHTML(after,'白兵斜吃')}</div>`;
+  }
+  return '';
+}
+
+/* ---------- Start ---------- */
+document.getElementById('evo-w').src = PROMO_B64.w;
+document.getElementById('evo-b').src = PROMO_B64.b;
+initBoard();
+resizeBoard();
+render();
+renderPuzzleList();
+renderRuleDiagrams();
+</script>
+</body>
+</html>
