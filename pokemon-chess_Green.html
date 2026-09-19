@@ -2,7 +2,12 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="寶可夢西洋棋">
+<meta name="theme-color" content="#0A1D17">
 <title>寶可夢西洋棋</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -19,6 +24,10 @@
     --ink:#1B2B24;
     --sq:64px;
     --coord-w:22px;
+    --sat:env(safe-area-inset-top, 0px);
+    --sar:env(safe-area-inset-right, 0px);
+    --sab:env(safe-area-inset-bottom, 0px);
+    --sal:env(safe-area-inset-left, 0px);
   }
   *{box-sizing:border-box;}
   html, body{ height:100%; }
@@ -34,7 +43,7 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:28px 16px 60px;
+    padding:0 calc(16px + var(--sar)) calc(60px + var(--sab)) calc(16px + var(--sal));
   }
   h1{
     font-family:'Press Start 2P', monospace;
@@ -42,7 +51,7 @@
     color:var(--gold);
     text-shadow:3px 3px 0 var(--red), 0 0 22px rgba(255,203,5,0.25);
     letter-spacing:1px;
-    margin:6px 0 4px;
+    margin:14px 0 4px;
     text-align:center;
     line-height:1.6;
   }
@@ -70,6 +79,57 @@
   }
   .mode-tab.active{ background:var(--gold); color:var(--ink); box-shadow:none; }
   .mode-tab:active{ transform:none; }
+  /* ---------- Top bar & fullscreen button ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:900;
+    align-self:stretch;
+    display:flex; justify-content:flex-end; align-items:center;
+    padding:calc(8px + var(--sat)) 0 8px;
+    transition:background .15s ease;
+  }
+  .topbar.stuck{
+    background:rgba(10,29,23,0.82);
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+  }
+  .fs-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(0,0,0,0.35);
+    color:var(--cream);
+    border:1.5px solid var(--gold);
+    box-shadow:none;
+    font-size:13px;
+    padding:7px 14px;
+    min-height:36px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .fs-btn:active{ transform:translateY(1px); box-shadow:none; }
+  .fs-btn svg{ width:16px; height:16px; flex-shrink:0; display:block; }
+  .fs-btn .ico-exit{ display:none; }
+  html.fs-mode .fs-btn .ico-enter{ display:none; }
+  html.fs-mode .fs-btn .ico-exit{ display:block; }
+  html.fs-mode .fs-btn{ background:var(--gold); color:var(--ink); }
+  /* 全螢幕／專注模式：隱藏標題，把空間留給棋盤 */
+  html.fs-mode h1, html.fs-mode .subtitle{ display:none; }
+  html.fs-mode .mode-tabs{ margin-top:4px; }
+  .fs-tip{
+    position:fixed;
+    left:50%; transform:translateX(-50%);
+    top:calc(58px + var(--sat));
+    z-index:1050;
+    width:min(92vw, 420px);
+    background:linear-gradient(180deg, var(--pine) 0%, #0d241c 100%);
+    border:2px solid var(--gold);
+    border-radius:14px;
+    padding:12px 14px;
+    box-shadow:0 14px 34px rgba(0,0,0,0.6);
+    font-size:13px;
+    line-height:1.75;
+    color:rgba(250,243,224,0.92);
+  }
+  .fs-tip p{ margin:0 0 6px; }
+  .fs-tip b{ color:var(--gold); }
+  .fs-tip button{ font-size:12px; padding:6px 16px; margin-top:2px; }
   .ghost-btn{
     background:rgba(0,0,0,0.3);
     box-shadow:none;
@@ -334,12 +394,14 @@
     grid-column:2 / span 8;
     grid-row:2 / span 8;
     display:grid;
-    grid-template-columns:repeat(8, var(--sq));
-    grid-template-rows:repeat(8, var(--sq));
-    border:4px solid var(--gold);
+    grid-template-columns:repeat(8, minmax(0, 1fr));
+    grid-template-rows:repeat(8, minmax(0, 1fr));
+    /* 金色外框改用 box-shadow 畫在棋盤「外面」，不再佔用內部空間，
+       這樣 8x8 格子剛好等於棋盤大小，最下排／最右排的棋子不會被裁掉 */
+    border:0;
     border-radius:6px;
     overflow:hidden;
-    box-shadow:0 10px 26px rgba(0,0,0,0.5);
+    box-shadow:0 0 0 4px var(--gold), 0 10px 26px rgba(0,0,0,0.5);
   }
   .square{
     position:relative;
@@ -508,7 +570,7 @@
 
   /* ---------- Responsive tweaks for tablet / phone ---------- */
   @media (max-width: 640px){
-    body{ padding:16px 8px 40px; }
+    body{ padding:0 calc(8px + var(--sar)) calc(40px + var(--sab)) calc(8px + var(--sal)); }
     .stadium{ padding:12px; gap:10px; border-radius:14px; }
     .top-row{ flex-direction:column; align-items:stretch; gap:8px; }
     .status-bar{ order:-1; min-width:0; font-size:14px; }
@@ -527,7 +589,7 @@
     .evo-note{ font-size:12px; }
   }
   @media (orientation: landscape) and (max-height: 480px){
-    body{ padding:10px 8px 24px; }
+    body{ padding:0 calc(8px + var(--sar)) calc(24px + var(--sab)) calc(8px + var(--sal)); }
     h1{ margin:2px 0; }
     .subtitle{ margin-bottom:8px; }
     .legend{ display:none; } /* hide reference table in short landscape view to keep board visible without scrolling */
@@ -535,6 +597,19 @@
 </style>
 </head>
 <body>
+
+<div class="topbar" id="topbar">
+  <button class="fs-btn" id="fs-btn" type="button" aria-pressed="false" aria-label="進入全螢幕">
+    <svg class="ico-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    <svg class="ico-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+    <span id="fs-label">全螢幕</span>
+  </button>
+</div>
+<div class="fs-tip" id="fs-tip" style="display:none;" role="status">
+  <p><b>📱 這台裝置的 Safari 不支援網頁進入系統全螢幕</b>，已改用「專注模式」：隱藏標題、把棋盤放到最大。向上滑動頁面，網址列也會自動縮小。</p>
+  <p>想要完全沒有網址列：點 Safari 的「分享」鈕 → <b>加入主畫面</b>，之後從主畫面圖示開啟，就是真正的全螢幕。</p>
+  <button type="button" id="fs-tip-close">知道了</button>
+</div>
 
 <h1>寶可夢西洋棋</h1>
 <div class="subtitle">阿爾宙斯陣營 🆚 超夢陣營</div>
@@ -1229,7 +1304,7 @@ function resizeBoard(){
 
   // also make sure the board doesn't force excessive vertical scrolling on short screens
   const vh = window.innerHeight;
-  const verticalReserve = 300; // rough height of title/status/controls/legend/margins
+  const verticalReserve = document.documentElement.classList.contains('fs-mode') ? 245 : 325; // rough height of top bar/title/status/controls/margins
   const sqByHeight = Math.floor((vh - verticalReserve) / 8);
   if(sqByHeight > 20) sq = Math.min(sq, sqByHeight);
 
@@ -1679,6 +1754,97 @@ function buildSpecialRuleDiagram(kind){
   }
   return '';
 }
+
+/* ---------- Fullscreen (Android / iPad = real Fullscreen API, iPhone Safari = focus mode fallback) ---------- */
+(function(){
+  const root = document.documentElement;
+  const btn = document.getElementById('fs-btn');
+  const label = document.getElementById('fs-label');
+  const tip = document.getElementById('fs-tip');
+  const topbar = document.getElementById('topbar');
+  const ua = navigator.userAgent || '';
+  // iPadOS 13+ 的 Safari 預設會偽裝成 Mac，所以要再用觸控點數判斷
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  // 已經從 iOS「加入主畫面」或 PWA fullscreen 開啟 → 本來就是全螢幕，不需要按鈕
+  const alreadyFull = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches);
+  if(alreadyFull){ topbar.style.display = 'none'; return; }
+
+  let pseudo = false;   // 「專注模式」（沒有系統全螢幕可用時的替代方案）
+  let tipShown = false;
+  let tipTimer = null;
+
+  const reqFn  = root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
+  const exitFn = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+  const realOK = !!reqFn && document.fullscreenEnabled !== false && document.webkitFullscreenEnabled !== false;
+
+  function fsElement(){
+    return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+  }
+  function isFull(){ return !!fsElement() || pseudo; }
+
+  function apply(){
+    const on = isFull();
+    root.classList.toggle('fs-mode', on);
+    label.textContent = on ? '退出全螢幕' : '全螢幕';
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.setAttribute('aria-label', on ? '退出全螢幕' : '進入全螢幕');
+    resizeBoard();
+    scheduleResize();   // 進出全螢幕時視窗大小是稍後才更新，再量一次
+  }
+
+  function showTip(){
+    if(tipShown) return;
+    tipShown = true;
+    tip.style.display = 'block';
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(hideTip, 15000);
+  }
+  function hideTip(){ tip.style.display = 'none'; clearTimeout(tipTimer); }
+
+  function enterPseudo(){
+    pseudo = true;
+    apply();
+    if(isIOS) showTip();
+  }
+
+  function enter(){
+    if(realOK){
+      try{
+        const p = reqFn.call(root);
+        if(p && typeof p.then === 'function'){
+          p.catch(()=>{ if(!fsElement()) enterPseudo(); });
+        }
+        // 舊版 webkit 沒有 Promise，也可能被系統默默拒絕 → 稍後檢查，沒進去就用專注模式
+        setTimeout(()=>{ if(!fsElement() && !pseudo) enterPseudo(); }, 600);
+        return;
+      }catch(e){ /* 落到下面的專注模式 */ }
+    }
+    enterPseudo();
+  }
+
+  function exit(){
+    if(fsElement() && exitFn){
+      try{ const p = exitFn.call(document); if(p && p.catch) p.catch(()=>{}); }catch(e){}
+    }
+    pseudo = false;
+    hideTip();
+    apply();
+  }
+
+  btn.addEventListener('click', ()=>{ isFull() ? exit() : enter(); });
+  document.getElementById('fs-tip-close').addEventListener('click', hideTip);
+  ['fullscreenchange','webkitfullscreenchange','msfullscreenchange'].forEach(ev=>{
+    document.addEventListener(ev, apply);
+  });
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && pseudo) exit(); });
+
+  // 捲動後讓頂端列有半透明底，避免和內容重疊時看不清楚
+  window.addEventListener('scroll', ()=>{
+    topbar.classList.toggle('stuck', window.scrollY > 4);
+  }, { passive:true });
+})();
 
 /* ---------- Start ---------- */
 document.getElementById('evo-w').src = PROMO_B64.w;
