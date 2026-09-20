@@ -327,7 +327,7 @@
     flex-direction:column;
     align-items:center;
     gap:16px;
-    max-width:960px;
+    max-width:1240px;
     width:100%;
   }
   .top-row{
@@ -1308,7 +1308,7 @@ function resizeBoard(){
   const sqByHeight = Math.floor((vh - verticalReserve) / 8);
   if(sqByHeight > 20) sq = Math.min(sq, sqByHeight);
 
-  sq = Math.max(28, Math.min(sq, 72));
+  sq = Math.max(28, Math.min(sq, 100));
   coordW = Math.max(14, Math.round(sq * 0.3));
 
   document.documentElement.style.setProperty('--sq', sq + 'px');
