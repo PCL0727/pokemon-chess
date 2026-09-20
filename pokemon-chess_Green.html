@@ -387,7 +387,8 @@
   }
   .coord{
     display:flex; align-items:center; justify-content:center;
-    font-size:clamp(9px, calc(var(--sq) * 0.18), 12px);
+    font-size:clamp(12px, calc(var(--sq) * 0.24), 18px);
+    line-height:1;
     color:rgba(250,243,224,0.55); font-weight:700;
   }
   #board, #puzzle-board{
@@ -724,7 +725,14 @@
     <div class="coord">a</div><div class="coord">b</div><div class="coord">c</div><div class="coord">d</div>
     <div class="coord">e</div><div class="coord">f</div><div class="coord">g</div><div class="coord">h</div>
     <div></div>
-    <div class="coord">8</div>
+    <div class="coord" style="grid-row:2;">8</div>
+    <div class="coord" style="grid-row:3;">7</div>
+    <div class="coord" style="grid-row:4;">6</div>
+    <div class="coord" style="grid-row:5;">5</div>
+    <div class="coord" style="grid-row:6;">4</div>
+    <div class="coord" style="grid-row:7;">3</div>
+    <div class="coord" style="grid-row:8;">2</div>
+    <div class="coord" style="grid-row:9;">1</div>
     <div id="board"></div>
   </div>
 
@@ -768,7 +776,14 @@
         <div class="coord">a</div><div class="coord">b</div><div class="coord">c</div><div class="coord">d</div>
         <div class="coord">e</div><div class="coord">f</div><div class="coord">g</div><div class="coord">h</div>
         <div></div>
-        <div class="coord">8</div>
+        <div class="coord" style="grid-row:2;">8</div>
+        <div class="coord" style="grid-row:3;">7</div>
+        <div class="coord" style="grid-row:4;">6</div>
+        <div class="coord" style="grid-row:5;">5</div>
+        <div class="coord" style="grid-row:6;">4</div>
+        <div class="coord" style="grid-row:7;">3</div>
+        <div class="coord" style="grid-row:8;">2</div>
+        <div class="coord" style="grid-row:9;">1</div>
         <div id="puzzle-board"></div>
       </div>
 
@@ -1297,9 +1312,9 @@ function resizeBoard(){
   const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
   const innerWidth = stadium.clientWidth - padX;
 
-  let coordW = 20;
+  let coordW = 24;
   let sq = Math.floor((innerWidth - 2*coordW) / 8);
-  coordW = Math.max(14, Math.min(24, sq * 0.32));
+  coordW = Math.max(18, Math.min(30, sq * 0.36));
   sq = Math.floor((innerWidth - 2*coordW) / 8);
 
   // also make sure the board doesn't force excessive vertical scrolling on short screens
@@ -1309,7 +1324,7 @@ function resizeBoard(){
   if(sqByHeight > 20) sq = Math.min(sq, sqByHeight);
 
   sq = Math.max(28, Math.min(sq, 100));
-  coordW = Math.max(14, Math.round(sq * 0.3));
+  coordW = Math.max(18, Math.round(sq * 0.34));
 
   document.documentElement.style.setProperty('--sq', sq + 'px');
   document.documentElement.style.setProperty('--coord-w', coordW + 'px');
